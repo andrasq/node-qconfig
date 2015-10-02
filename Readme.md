@@ -118,5 +118,5 @@ ChangeLog
 Related Work
 ------------
 
-[config](http://npmjs.com/package/config) - what everyone uses
-[config-node](http://npmjs.com/package/config-node) - tiny lean config loader with a great Readme
+* [config](http://npmjs.com/package/config) - what everyone uses
+* [config-node](http://npmjs.com/package/config-node) - tiny lean config loader with a great Readme
