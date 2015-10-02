@@ -22,20 +22,31 @@ API
 
 ### require('qconfig')
 
-Load the configuration for the environment specified by NODE_ENV (default
-'development').  The configuration files are read from a directory `config` in the
-same directory as, or in a containing parent directory along the filepath of, the
-source file that loaded the configuration.
+Load the configuration for the environment specified by the NODE_ENV environment
+variable (or 'development' by default).  The configuration files are read from a
+directory `config` in the same directory as, or in the nearest containing directory
+of, the source file that loaded the configuration.
 
-E.g., if a source `/home/andras/src/project/lib/main.js` calls `require('qconfig')`
-the config directory is checked to be `/home/andras/src/project/lib/config`,
-`/home/andras/src/project/config`, `/home/andras/src/config`,
-`/home/andras/config`, etc.  Typically the config directory lives in the project
-root, ie at `/home/andras/src//project/config`
+E.g., if a source file `/src/project/lib/main.js` calls `require('qconfig')` the
+config directory is checked to exist as name, in order, `/src/project/lib/config`,
+`/src/project/config`, `/src/config`, and finally `/config`.  Typically the config
+directory lives in the project root, ie at `/src/project/config`
+
+The configuration is returned as a data object with properties corresponding to
+named values in the configuration file(s).  The data object has no get/set methods.
+The configuration files can not be modified at runtime using these calls.
+
+Configurations are distinct and are named for their intended environment, ie
+'development', 'staging', 'production'.  Each environment can optionally inherit
+the configuration one or more other environments (or none), which in turn can
+themselves inherit, recursively.  A few environments are built in, but the
+environments and their inheritance hierarchy is totally configurable.
 
         var config = require('config')
 
-### qconf = new QConfig( opts )
+### qconf = new require('qconfig').QConfig( opts )
+
+The QConfig is the actual implementation class.
 
 Options:
 
@@ -45,6 +56,9 @@ Options:
   `{ development: ['default'], staging: ['default'], production: ['default'], canary: ['production'] }`.
   Passed in layers are merged into the defaults; to delete layer a layer set it to `undefined`.
 * `loader` - function to read and parse the config file (default `require()`)
+
+        var QConfig = require('qconfig').QConfig
+        var qconf = new QConfig()
 
 ### qconf.load( [environmentName] [,configDirectory] )
 
