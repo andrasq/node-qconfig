@@ -70,9 +70,9 @@ Options:
 Read and return the configuration for the named environment from the named
 directory.  If the config directory is omitted, it will be located by searching
 upward the directory hierarchy containing the file that called qconf.load().  If
-the directory is not found returns `{ notConfigured: true }`.  If environmentName
-is omitted, the 'development' environment is looked up.  If the named environment
-is not configured, return the empty config `{ }`.
+the config directory is not found returns `{ notConfigured: true }`.  If
+environmentName is omitted, it defaults to 'development'.  If the named environment
+is not configured, returns an empty config `{ }`.
 
         var qconf = new QConfig()
         var config = qconf.load('development', './config')
