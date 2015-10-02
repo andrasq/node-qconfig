@@ -33,7 +33,9 @@ the config directory is checked to be `/home/andras/src/project/lib/config`,
 `/home/andras/config`, etc.  Typically the config directory lives in the project
 root, ie at `/home/andras/src//project/config`
 
-### new QConfig( opts )
+        var config = require('config')
+
+### qconf = new QConfig( opts )
 
 Options:
 
@@ -53,8 +55,11 @@ the directory is not found returns `{ notConfigured: true }`.  If environmentNam
 is omitted, the 'development' environment is looked up.  If the named environment
 is not configured, return the empty config `{ }`.
 
+        var qconf = new QConfig()
+        var config = qconf.load('development', './config')
+
 
 Related Work
 ------------
 
-[config](npmjs.com/package/config) - what everyone uses
+[config](http://npmjs.com/package/config) - what everyone uses
