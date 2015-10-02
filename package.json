@@ -1,0 +1,27 @@
+{
+  "name": "qconfig",
+  "version": "1.0.0",
+  "description": "small, light configuration loader",
+  "main": "index.js",
+  "author": "Andras",
+  "license": "Apache 2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrasq/node-qconfig"
+  },
+  "keywords": [
+    "config", "loader", "small", "fast", "easy", "configuration", "load"
+  ],
+  "scripts": {
+    "test": "qunit test/test-*"
+  },
+  "bugs": {
+    "url": "https://github.com/andrasq/node-qrpc/issues"
+  },
+  "homepage": "https://github.com/andrasq/node-qconfig",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "node-qunit": "*"
+  }
+}
