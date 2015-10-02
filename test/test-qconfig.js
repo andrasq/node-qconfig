@@ -9,12 +9,24 @@
 
 'use strict'
 
-var qconfig = require('../index')
+var qconfig = require('..')
+var QConfig = require('../qconfig')
 
 module.exports = {
     'package': {
         'should parse': function(t) {
             require ('../package.json')
+            t.done()
+        },
+
+        'should load config': function(t) {
+            t.equal(typeof qconfig, 'object')
+            t.ok(! (qconfig instanceof QConfig))
+            t.done()
+        },
+
+        'should both export and expose QConfig': function(t) {
+            t.equal(qconfig.QConfig, QConfig)
             t.done()
         },
     },
@@ -93,6 +105,12 @@ module.exports = {
                 var qconf = new qconfig.QConfig({layers: {test1: ['test1'], test2: ['test3'], test3: ['test2']}})
                 try { qconf.load('test1'); t.fail() } catch (err) { t.ok(err.message.indexOf("recursion") >= 0) }
                 try { qconf.load('test2'); t.fail() } catch (err) { t.ok(err.message.indexOf("recursion") >= 0) }
+                t.done()
+            },
+
+            'should be available as qconfig/load': function(t) {
+                var config = (require('../load'))({env: 'canary'})
+                t.equal(config.canary, true)
                 t.done()
             },
         },

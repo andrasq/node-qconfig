@@ -1,6 +1,6 @@
 {
   "name": "qconfig",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "small, light configuration loader",
   "main": "index.js",
   "author": "Andras",
@@ -10,7 +10,7 @@
     "url": "https://github.com/andrasq/node-qconfig"
   },
   "keywords": [
-    "config", "loader", "small", "fast", "easy", "configuration", "load"
+    "configuration", "conf", "config", "small", "fast", "easy", "simple", "node-config", "config-node"
   ],
   "scripts": {
     "test": "qunit test/test-*"

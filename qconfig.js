@@ -17,6 +17,7 @@ var path = require('path')
 function QConfig( opts ) {
     opts = opts || {}
     this.opts = {}
+    this.opts.env = opts.env || process.env.NODE_ENV || 'development'
     this.opts.layers = {
         default: [],
         development: ['default'],
@@ -24,8 +25,9 @@ function QConfig( opts ) {
         production: ['default'],
         canary: ['production'],
     }
+    this.opts.caller = opts.caller || QConfig.getCallingFile(new Error().stack)
     this.opts.dirName = opts.dirName || 'config'
-    this.opts.configDirectory = opts.configDirectory || this._locateConfigDirectory(this._getCallingFile(new Error().stack), this.opts.dirName)
+    this.opts.configDirectory = opts.configDirectory || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
     if (opts.layers) for (var i in opts.layers) this.opts.layers[i] = opts.layers[i]
     this.opts.loadConfig = opts.loader || require
 }
@@ -35,10 +37,10 @@ QConfig.prototype = {
     _depth: 0,
 
     load: function load( env, configDirectory ) {
-        var env = env || process.env.NODE_ENV || 'development'
+        var env = env || this.opts.env
         var configDirectory = configDirectory || this.opts.configDirectory
         if (!configDirectory || !this._isDirectory(configDirectory)) return {notConfigured: true}      // no config directory
-        var calledFrom = this._getCallingFile(new Error().stack)
+        var calledFrom = QConfig.getCallingFile(new Error().stack)
 
         this._depth += 1
         var config = {}, layers = this.opts.layers[env]
@@ -79,31 +81,25 @@ QConfig.prototype = {
         try { return fs.statSync(dirname).isDirectory() }
         catch (err) { return false }
     },
-
-    _getCallingFile: function _getCallingFile( stack ) {
-        var mm, line, myFilename = '/' + path.basename(__filename) + ':'
-        stack = stack.split('\n')
-        stack.shift()
-        while (stack.length && stack[0].indexOf(myFilename) >= 0) stack.shift()
-
-        // over-deep stack will not include all lines
-        if (!stack.length) return ''
-        line = stack[0]
-
-        if ((mm = line.match(/ at \(((.*):([0-9]+):([0-9]+))\)$/)) || (mm = line.match(/ at .+ \(((.*):([0-9]+):([0-9]+))\)$/))) {
-            // mm[2] is filename, mm[3] is line num, mm[4] is column
-            return mm[2]
-        }
-        return ''
-    },
 }
 
-// require returns the loaded configuration for this directory
-var globalConfig = new QConfig().load()
-module.exports = globalConfig
+QConfig.getCallingFile = function getCallingFile( stack, filename ) {
+    filename = filename || __filename
+    var myFilename = '/' + path.basename(filename) + ':'
+    stack = stack.split('\n')
+    stack.shift()
+    // find the first line in the backtrace that called this file
+    while (stack.length && stack[0].indexOf(myFilename) >= 0) stack.shift()
 
-if (module.exports.QConfig === undefined) {
-    // QConfig is a hidden property on the configuration,
-    // unless the configuration itself contains a QConfig field
-    Object.defineProperty(module.exports, 'QConfig', {value: QConfig, writable: true, enumerable: false, configurable: true})
+    // over-deep stack will not include all lines
+    var line = stack.length ? stack[0] : ''
+
+    var mm
+    if ((mm = line.match(/ at \(((.*):([0-9]+):([0-9]+))\)$/)) || (mm = line.match(/ at .+ \(((.*):([0-9]+):([0-9]+))\)$/))) {
+        // mm[2] is filename, mm[3] is line num, mm[4] is column
+        return mm[2]
+    }
+    return ''
 }
+
+module.exports = QConfig
