@@ -29,7 +29,7 @@ Usage
 API
 ---
 
-### require('qconfig')
+### config = require('qconfig')
 
 Load the configuration for the environment specified by the NODE_ENV environment
 variable (or 'development' by default).  The configuration files are read from a
@@ -60,7 +60,7 @@ class is also exported as `require('qconfig/qconfig')`
         var QConfig = require('qconfig').QConfig
         var QConfig = require('qconfig/qconfig')
 
-### require('qconfig/load')( opts )
+### config = require('qconfig/load')( opts )
 
 Shortcut for loading a custom configuration.  Returns a function that uses a new
 QConfig instance to load the environment specified in `opts.env` (else the default).
@@ -69,7 +69,11 @@ QConfig instance to load the environment specified in `opts.env` (else the defau
         var config = new QConfig(opts).load()
         // same as config = require('qconfig/load')(opts)
 
-### qconf = new require('qconfig/qconfig')( opts )
+### QConfig = require('qconfig/qconfig')
+
+The config loader implementation class.
+
+### new QConfig( opts )
 
 The QConfig is the actual implementation class.  `require('qconfig')` internally
 uses a QConfig object to load the config settings that it returns.
