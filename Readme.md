@@ -42,11 +42,16 @@ the configuration one or more other environments (or none), which in turn can
 themselves inherit, recursively.  A few environments are built in, but the
 environments and their inheritance hierarchy is totally configurable.
 
+Each config returned has a hidden element `QConfig` that is the implementation
+class of the config loader, unless the config itself has a section QConfig in which
+case the implementation class is not exported.
+
         var config = require('config')
 
 ### qconf = new require('qconfig').QConfig( opts )
 
-The QConfig is the actual implementation class.
+The QConfig is the actual implementation class.  `require('qconfig')` internally
+uses a QConfig object to load the config settings that it returns.
 
 Options:
 
