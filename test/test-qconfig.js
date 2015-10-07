@@ -101,7 +101,7 @@ module.exports = {
                 t.done()
             },
 
-            'should catch self-recursive layering': function(t) {
+            'should catch self-recursive dependencies': function(t) {
                 var qconf = new qconfig.QConfig({layers: {test1: ['test1'], test2: ['test3'], test3: ['test2']}})
                 try { qconf.load('test1'); t.fail() } catch (err) { t.ok(err.message.indexOf("recursion") >= 0) }
                 try { qconf.load('test2'); t.fail() } catch (err) { t.ok(err.message.indexOf("recursion") >= 0) }
@@ -111,6 +111,11 @@ module.exports = {
             'should be available as qconfig/load': function(t) {
                 var config = (require('../load'))({env: 'canary'})
                 t.equal(config.canary, true)
+                t.done()
+            },
+
+            'should load a non-existent configuration': function(t) {
+                var config = this.qconf.load('notexist')
                 t.done()
             },
         },

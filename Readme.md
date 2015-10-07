@@ -110,7 +110,7 @@ ChangeLog
 
 1.1.1
 
-* fix filepath detection
+* fix caller filepath detection
 
 1.1.0
 

@@ -36,7 +36,7 @@ QConfig.prototype = {
     opts: null,
     _depth: 0,
 
-    load: function load( env, configDirectory ) {
+    load: function load( env, configDirectory, _nested ) {
         var env = env || this.opts.env
         var configDirectory = configDirectory || this.opts.configDirectory
         if (!configDirectory || !this._isDirectory(configDirectory)) return {notConfigured: true}      // no config directory
@@ -46,20 +46,22 @@ QConfig.prototype = {
         var config = {}, layers = this.opts.layers[env]
         if (layers) {
             if (this._depth > 100) throw new Error("runaway recursion")
-            for (var i in layers) this._layerConfig(config, this.load(layers[i]))
+            for (var i in layers) this._layerConfig(config, this.load(layers[i]), null, true)
         }
-        this._layerConfig(config, this._loadConfigFile(env, configDirectory))
+        this._layerConfig(config, this._loadConfigFile(env, configDirectory, _nested))
         this._depth -= 1
         return config
     },
 
-    _loadConfigFile: function _loadConfigFile( env, configDirectory ) {
+    _loadConfigFile: function _loadConfigFile( env, configDirectory, _nested ) {
         try {
             return this.opts.loadConfig(configDirectory + "/" + env)
         }
         catch (err) {
             // "not found" is ok, other errors are fatal
             if (err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err
+            // warn if the requested environment is not configured
+            if (!_nested) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
         }
     },
 
@@ -87,6 +89,7 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     filename = filename || __filename
     var myFilename = new RegExp("/" + path.basename(filename) + ":[0-9]+:[0-9]+[)]$")
     var qconfigFilename = new RegExp("/qconfig/")
+    var qconfigTestfile = new RegExp("/qconfig/test/")
     var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")
     stack = stack.split('\n')
     stack.shift()
@@ -94,7 +97,7 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     while (
         stack.length && (
             myFilename.test(stack[0]) ||
-            qconfigFilename.test(stack[0]) ||
+            qconfigFilename.test(stack[0]) && !qconfigTestfile.test(stack[0]) ||
             builtinFilename.test(stack[0])
         ))
     {
