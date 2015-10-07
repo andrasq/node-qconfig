@@ -85,11 +85,21 @@ QConfig.prototype = {
 
 QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     filename = filename || __filename
-    var myFilename = '/' + path.basename(filename) + ':'
+    var myFilename = new RegExp("/" + path.basename(filename) + ":[0-9]+:[0-9]+[)]$")
+    var qconfigFilename = new RegExp("/qconfig/")
+    var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")
     stack = stack.split('\n')
     stack.shift()
     // find the first line in the backtrace that called this file
-    while (stack.length && stack[0].indexOf(myFilename) >= 0) stack.shift()
+    while (
+        stack.length && (
+            myFilename.test(stack[0]) ||
+            qconfigFilename.test(stack[0]) ||
+            builtinFilename.test(stack[0])
+        ))
+    {
+        stack.shift()
+    }
 
     // over-deep stack will not include all lines
     var line = stack.length ? stack[0] : ''

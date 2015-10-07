@@ -108,6 +108,10 @@ not configured, returns an empty config `{ }`.
 ChangeLog
 ---------
 
+1.1.1
+
+* fix filepath detection
+
 1.1.0
 
 * export QConfig directly via require('qconfig/qconfig')
