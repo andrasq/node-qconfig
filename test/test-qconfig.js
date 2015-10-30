@@ -52,7 +52,7 @@ module.exports = {
 
             'should incorporate new layers': function(t) {
                 var qconf = new qconfig.QConfig({layers: {target: ['layer1', 'layer2']}})
-                t.deepEqual(qconf.opts.layers.target, ['layer1', 'layer2'])
+                t.deepEqual(qconf._findLayers('target'), ['layer1', 'layer2'])
                 t.done()
             },
 

@@ -16,20 +16,26 @@ var path = require('path')
 
 function QConfig( opts ) {
     opts = opts || {}
-    this.opts = {}
-    this.opts.env = opts.env || process.env.NODE_ENV || 'development'
-    this.opts.layers = {
+    this.opts = {
+        env: opts.env || process.env.NODE_ENV || 'development',
+        layers: [
+            // list of [environment name, list of environments it inherits from]
+            // environment name can be a string or a regex pattern
+        ],
+        caller: opts.caller || QConfig.getCallingFile(new Error().stack),
+        dirName: opts.dirName || 'config',
+        configDirectory: null,
+        loadConfig: opts.loader || require,
+    }
+    this._installLayers({
         default: [],
         development: ['default'],
         staging: ['default'],
         production: ['default'],
         canary: ['production'],
-    }
-    this.opts.caller = opts.caller || QConfig.getCallingFile(new Error().stack)
-    this.opts.dirName = opts.dirName || 'config'
+    })
     this.opts.configDirectory = opts.configDirectory || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
-    if (opts.layers) for (var i in opts.layers) this.opts.layers[i] = opts.layers[i]
-    this.opts.loadConfig = opts.loader || require
+    if (opts.layers) this._installLayers(opts.layers)
 }
 
 QConfig.prototype = {
@@ -43,14 +49,55 @@ QConfig.prototype = {
         var calledFrom = QConfig.getCallingFile(new Error().stack)
 
         this._depth += 1
-        var config = {}, layers = this.opts.layers[env]
+        var config = {}, layers = this._findLayers(env)
         if (layers) {
             if (this._depth > 100) throw new Error("runaway recursion")
-            for (var i in layers) this._layerConfig(config, this.load(layers[i]), null, true)
+            for (var i=0; i<layers.length; i++) this._layerConfig(config, this.load(layers[i]), null, true)
         }
         this._layerConfig(config, this._loadConfigFile(env, configDirectory, _nested))
         this._depth -= 1
         return config
+    },
+
+    _installLayers: function _installLayers( layering ) {
+        var layerStack = this.opts.layers
+        if (Array.isArray(layering) && Array.isArray(layering[0])) {
+            for (var i=0; i<layering.length; i++) installLayer(layering[i][0], layering[i].slice(1))
+        }
+        else if (Array.isArray(layering)) {
+            installLayer(layering[0], layering.slice(1))
+        }
+        else {
+            for (var i in layering) installLayer(i, layering[i])
+        }
+
+        function installLayer( name, inheritsFrom ) {
+            if (name instanceof RegExp) {
+                layerStack.push([name, inheritsFrom])           // regex object
+            }
+            else if (name[0] === '/' && name[name.length-1] === '/') {
+                var pattern = new RegExp(name.slice(1, -1))
+                layerStack.push([pattern, inheritsFrom])        // regex object from string
+            }
+            else {
+                layerStack.push([name, inheritsFrom])           // string
+            }
+        }
+    },
+
+    _findLayers: function _findLayers( env ) {
+        // matching layer O(n) linear search, faster than hash for short lists
+        // search newest to oldest, newest matching entry wins
+        var layers = this.opts.layers
+        for (var i=layers.length-1; i>=0; i--) {
+            if (typeof layers[i][0] === 'string') {
+                if (layers[i][0] === env) return layers[i][1]
+            }
+            else {
+                if (layers[i][0].test(env)) return layers[i][1]
+            }
+        }
+        return null
     },
 
     _loadConfigFile: function _loadConfigFile( env, configDirectory, _nested ) {

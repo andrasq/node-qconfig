@@ -2,7 +2,8 @@ QConfig
 =======
 
 Small, light configuration loader.  Loads json and javascript config files (also
-coffee-script).
+coffee-script).  Configuration can be hierarchical, inheriting from multiple sources
+specified by name or by regular expression.
 
 
 Features
@@ -10,6 +11,7 @@ Features
 
 * short, simple, no dependencies
 * hierarchical, with multiple inheritance
+* inheritance hierarchy can be configured by absolute name name or by regular expression
 * configurable config file loader
 * can find config directory along filepath
 * shareable, can be called from multiple places
@@ -107,6 +109,10 @@ not configured, returns an empty config `{ }`.
 
 ChangeLog
 ---------
+
+1.2.0
+
+* allow regular expressions (object or string) as layer names
 
 1.1.1
 
