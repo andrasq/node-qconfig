@@ -86,8 +86,9 @@ Options:
 * `dirName` - relative directory name holding the config files (default `config`)
 * `configDirectory` - absolute directory name holding the config files (no default)
 * `layers` - the rules of which environments to inherit from.  The default rules are
-  `{ development: ['default'], staging: ['default'], production: ['default'], canary: ['production'] }`.
-  Passed in layers are merged into the defaults; to delete layer a layer set it to `undefined`.
+  `{ default: [], development: ['default'], staging: ['default'], production: ['default'],
+  canary: ['production'], custom: ['production'] }`.
+  Passed in layers are merged into the defaults; to delete layer set it to `undefined`.
 * `loader` - function to read and parse the config file (default `require()`)
 
         var QConfig = require('qconfig/qconfig')

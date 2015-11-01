@@ -33,6 +33,7 @@ function QConfig( opts ) {
         staging: ['default'],
         production: ['default'],
         canary: ['production'],
+        custom: ['production'],
     })
     this.opts.configDirectory = opts.configDirectory || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
     if (opts.layers) this._installLayers(opts.layers)
