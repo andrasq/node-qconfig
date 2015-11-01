@@ -82,10 +82,14 @@ uses a QConfig object to load the config settings that it returns.
 
 Options:
 
-* `env` - name of config section to load, as can also be passed to `load()`
+* `env` - name of config section to load, as can also be passed to `load()`.
+  If not specified in options looks for the NODE_ENV environment variable,
+  or uses the default `development`.
 * `dirName` - relative directory name holding the config files (default `config`)
-* `configDirectory` - absolute directory name holding the config files (no default)
-* `layers` - the rules of which environments to inherit from.  The default rules are
+* `configDirectory` - absolute directory name holding the config files (no default).
+  If not specified in options looks for the `NODE_CONFIG_DIR` environment variable,
+  or searches up along the directory path of the calling file.
+* `layers` - the inherits-from list of environments.  The default inheritance rules are
   `{ default: [], development: ['default'], staging: ['default'], production: ['default'],
   canary: ['production'], custom: ['production'] }`.
   Passed in layers are merged into the defaults; to delete layer set it to `undefined`.
@@ -114,6 +118,7 @@ ChangeLog
 1.2.0
 
 * allow regular expressions (object or string) as layer names
+* use NODE_CONFIG_DIR env var when locating config directory
 
 1.1.1
 

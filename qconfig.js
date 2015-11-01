@@ -18,15 +18,14 @@ function QConfig( opts ) {
     opts = opts || {}
     this.opts = {
         env: opts.env || process.env.NODE_ENV || 'development',
-        layers: [
-            // list of [environment name, list of environments it inherits from]
-            // environment name can be a string or a regex pattern
-        ],
         caller: opts.caller || QConfig.getCallingFile(new Error().stack),
         dirName: opts.dirName || 'config',
         configDirectory: null,
         loadConfig: opts.loader || require,
+        layers: [],
     }
+    this.opts.configDirectory =
+        opts.configDirectory || process.env.NODE_CONFIG_DIR || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
     this._installLayers({
         default: [],
         development: ['default'],
@@ -35,7 +34,6 @@ function QConfig( opts ) {
         canary: ['production'],
         custom: ['production'],
     })
-    this.opts.configDirectory = opts.configDirectory || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
     if (opts.layers) this._installLayers(opts.layers)
 }
 
@@ -53,7 +51,9 @@ QConfig.prototype = {
         var config = {}, layers = this._findLayers(env)
         if (layers) {
             if (this._depth > 100) throw new Error("runaway recursion")
-            for (var i=0; i<layers.length; i++) this._layerConfig(config, this.load(layers[i]), null, true)
+            for (var i=0; i<layers.length; i++) {
+                this._layerConfig(config, this.load(layers[i]), configDirectory, true)
+            }
         }
         this._layerConfig(config, this._loadConfigFile(env, configDirectory, _nested))
         this._depth -= 1
@@ -61,6 +61,10 @@ QConfig.prototype = {
     },
 
     _installLayers: function _installLayers( layering ) {
+        if (!this.opts.layers) this.opts.layers = [
+            // list of [environment name, list of environments it inherits from] tuples
+            // environment name can be a string or a regex pattern
+        ]
         var layerStack = this.opts.layers
         if (Array.isArray(layering) && Array.isArray(layering[0])) {
             for (var i=0; i<layering.length; i++) installLayer(layering[i][0], layering[i].slice(1))
@@ -122,7 +126,7 @@ QConfig.prototype = {
     },
 
     _locateConfigDirectory: function _locateConfigDirectory( basepath, dirName ) {
-        var pathname = basepath + '/' + dirName
+        var pathname = (basepath || ".") + '/' + dirName
         if (this._isDirectory(pathname)) return pathname
         else return (basepath.indexOf('/') >= 0 && basepath !== '/') ? this._locateConfigDirectory(path.dirname(basepath), dirName) : null
     },
@@ -138,22 +142,34 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     var myFilename = new RegExp("/" + path.basename(filename) + ":[0-9]+:[0-9]+[)]$")
     var qconfigFilename = new RegExp("/qconfig/")
     var qconfigTestfile = new RegExp("/qconfig/test/")
-    var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")
+    var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")      // (module.js:1:2)
+    var sourceFilename = new RegExp("[(]\/[^:]*:[0-9]+:[0-9]+[)]$")     // (/path/file.js:1:2)
     stack = stack.split('\n')
-    stack.shift()
-    // find the first line in the backtrace that called this file
+
+    // find just the js files with absolute filepaths, skip [eval] and built-in sources
+    var line, sourceLines = [];
+    while ((line = stack.shift())) {
+        if (sourceFilename.test(line)) sourceLines.push(line)
+    }
+    stack = sourceLines
+
+    // find the first line in the backtrace that called qconfig
+    var prevLine = stack.shift()
     while (
         stack.length && (
             myFilename.test(stack[0]) ||
-            qconfigFilename.test(stack[0]) && !qconfigTestfile.test(stack[0]) ||
+            qconfigFilename.test(stack[0]) && !qconfigTestfile.test(stack[0]) && stack.length > 1 ||
             builtinFilename.test(stack[0])
         ))
     {
-        stack.shift()
+        prevLine = stack.shift()
     }
 
     // over-deep stack will not include all lines
-    var line = stack.length ? stack[0] : ''
+    line = stack.length ? stack[0] : ''
+
+    // if loading from the command line, the first file is the caller
+    if (!line) line = prevLine
 
     var mm
     if ((mm = line.match(/ at \(((.*):([0-9]+):([0-9]+))\)$/)) || (mm = line.match(/ at .+ \(((.*):([0-9]+):([0-9]+))\)$/))) {

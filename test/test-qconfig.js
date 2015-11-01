@@ -9,6 +9,7 @@
 
 'use strict'
 
+var path = require('path')
 var qconfig = require('..')
 var QConfig = require('../qconfig')
 
@@ -45,8 +46,17 @@ module.exports = {
             },
 
             'should accept configDirectory': function(t) {
-                var qconf = new qconfig.QConfig({configDirectory: './config2'})
+                var qconf = new qconfig.QConfig({configDirectory: path.dirname(__filename)+'/../config2'})
                 t.equal(qconf.load('default').config2, true)
+                t.done()
+            },
+
+            'should accept NODE_CONFIG_DIR': function(t) {
+                var save = process.env.NODE_CONFIG_DIR
+                process.env.NODE_CONFIG_DIR = path.dirname(__filename)+'/../config2'
+                var qconf = new qconfig.QConfig()
+                t.equal(qconf.load('default').config2, true)
+                if (save) process.env.NODE_CONFIG_DIR = save; else delete process.env.NODE_CONFIG_DIR
                 t.done()
             },
 
@@ -80,8 +90,24 @@ module.exports = {
             },
 
             'should return config from named directory': function(t) {
-                var config = this.qconf.load('default', './config2')
+                var config = this.qconf.load('default', path.dirname(__filename)+'/../config2')
                 t.equal(config.config2, true)
+                t.done()
+            },
+
+            'should use defined layers': function(t) {
+                var qconf = new qconfig.QConfig({ layers: {target: ['canary']} })
+                var config = qconf.load("target")
+                t.equal(config.canary, true)
+                t.done()
+            },
+
+            'should use defined layer regex string': function(t) {
+                var qconf = new qconfig.QConfig({ layers: {'/-override$/': ['canary', 'development']} })
+                var config = qconf.load("canary-override")
+                t.equal(config.canary, true)
+                t.equal(config.production, true)
+                t.equal(config.development, true)
                 t.done()
             },
 
@@ -126,7 +152,7 @@ module.exports = {
             t.done()
         },
 
-        'should merge layers from layer hierarchy': function(t) {
+        'should merge config settings from layer hierarchy': function(t) {
             var config = this.qconf.load('canary')
             t.equal(config.canary, true)
             t.equal(config.production, true)
