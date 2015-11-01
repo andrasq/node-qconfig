@@ -119,6 +119,7 @@ ChangeLog
 
 * allow regular expressions (object or string) as layer names
 * use NODE_CONFIG_DIR env var when locating config directory
+* also load settings from config/qconfig.conf.js or .json
 
 1.1.1
 

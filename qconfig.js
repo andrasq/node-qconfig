@@ -26,6 +26,7 @@ function QConfig( opts ) {
     }
     this.opts.configDirectory =
         opts.configDirectory || process.env.NODE_CONFIG_DIR || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
+
     this._installLayers({
         default: [],
         development: ['default'],
@@ -35,6 +36,9 @@ function QConfig( opts ) {
         custom: ['production'],
     })
     if (opts.layers) this._installLayers(opts.layers)
+
+    // read additional config settings from config/qconfig.conf
+    this._loadOptions(this.opts.configDirectory + "/qconfig.conf")
 }
 
 QConfig.prototype = {
@@ -103,6 +107,20 @@ QConfig.prototype = {
             }
         }
         return null
+    },
+
+    _loadOptions: function _loadOptions( filename ) {
+        try {
+            var opts = require(filename)
+            if (typeof opts === 'object') {
+                if (opts.layers) this._installLayers(opts.layers)
+                delete opts.layers
+                this._layerConfig(this.opts, opts)
+            }
+        }
+        catch (err) {
+            /* ignore error, missing config file is ok */
+        }
     },
 
     _loadConfigFile: function _loadConfigFile( env, configDirectory, _nested ) {

@@ -74,6 +74,13 @@ module.exports = {
                 t.equal(called, true)
                 t.done()
             },
+
+            'should apply qconfig.conf found in config dir': function(t) {
+                var qconf = new qconfig.QConfig({ dirName: 'config3' })
+                var config = qconf.load('preconfigured')
+                t.equal(config.canary, 'config3')
+                t.done();
+            },
         },
 
         'load': {
