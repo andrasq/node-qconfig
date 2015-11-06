@@ -66,7 +66,7 @@ module.exports = {
                 t.done()
             },
 
-            'should accept loader': function(t) {
+            'should accept loader function': function(t) {
                 var called = false
                 function loadConfig(filename) { called = true; return require(filename) }
                 var qconf = new qconfig.QConfig({loader: loadConfig})
@@ -151,6 +151,18 @@ module.exports = {
                 var config = this.qconf.load('notexist')
                 t.done()
             },
+        },
+
+        '_layerConfig should overwrite existing': function(t) {
+            var conf = this.qconf._layerConfig({a:1, b:2, c:{a:3, b:4}}, {b:22, c:{a:4, d:5}})
+            t.deepEqual(conf, {a:1, b:22, c:{a:4, b:4, d:5}})
+            t.done()
+        },
+
+        '_supplementConfig should retain existing': function(t) {
+            var conf = this.qconf._supplementConfig({a:1, b:2, c:{a:3, b:4}}, {b:22, c:{a:4, d:5}, d:55})
+            t.deepEqual(conf, {a:1, b:2, c:{a:3, b:4, d:5}, d:55})
+            t.done()
         },
 
         'should locate config dir closest to calling file walking up filepath': function(t) {

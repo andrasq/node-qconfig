@@ -22,10 +22,11 @@ function QConfig( opts ) {
         dirName: opts.dirName || 'config',
         configDirectory: null,
         loadConfig: opts.loader || require,
+        extensions: ['', '.js', '.json'],
         layers: [],
     }
     this.opts.configDirectory =
-        opts.configDirectory || process.env.NODE_CONFIG_DIR || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
+        opts.configDirectory || opts.dir || process.env.NODE_CONFIG_DIR || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
 
     this._installLayers({
         default: [],
@@ -38,7 +39,12 @@ function QConfig( opts ) {
     if (opts.layers) this._installLayers(opts.layers)
 
     // read additional config settings from config/qconfig.conf
-    this._loadOptions(this.opts.configDirectory + "/qconfig.conf")
+    try {
+        var opts = require(this.opts.configDirectory + "/qconfig.conf")
+        if (opts.layers) { this._installLayers(opts.layers) ; delete opts.layers }
+        this._supplementConfig(this.opts, opts)
+    }
+    catch (e) { }
 }
 
 QConfig.prototype = {
@@ -109,36 +115,39 @@ QConfig.prototype = {
         return null
     },
 
-    _loadOptions: function _loadOptions( filename ) {
-        try {
-            var opts = require(filename)
-            if (typeof opts === 'object') {
-                if (opts.layers) this._installLayers(opts.layers)
-                delete opts.layers
-                this._layerConfig(this.opts, opts)
+    _loadConfigFile: function _loadConfigFile( env, configDirectory, _nested ) {
+        var file = configDirectory + "/" + env
+        for (var i=0; i<this.opts.extensions.length; i++) {
+            // TODO: match the loader to the filename extension
+            var loadConfig = this.opts.loadConfig
+            try {
+                return loadConfig(file + this.opts.extensions[i])
+            }
+            catch (err) {
+                // "not found" is ok, other errors are fatal
+                if (err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err
             }
         }
-        catch (err) {
-            /* ignore error, missing config file is ok */
-        }
+        // if the user-supplied loader does not succeed, fall back to the built-in require()
+        try { return require(file) } catch (e) { }
+        // warn if the requested environment is not configured
+        if (!_nested) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
     },
 
-    _loadConfigFile: function _loadConfigFile( env, configDirectory, _nested ) {
-        try {
-            return this.opts.loadConfig(configDirectory + "/" + env)
-        }
-        catch (err) {
-            // "not found" is ok, other errors are fatal
-            if (err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err
-            // warn if the requested environment is not configured
-            if (!_nested) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
-        }
-    },
-
+    // merge layer into base, overriding existing
     _layerConfig: function _layerConfig( base, layer ) {
         for (var k in layer) {
             if (typeof base[k] === 'object' && typeof layer[k] === 'object') this._layerConfig(base[k], layer[k])
             else base[k] = layer[k]
+        }
+        return base
+    },
+
+    // merge layer into base, retaining existing
+    _supplementConfig: function _supplementConfig( base, layer ) {
+        for (var k in layer) {
+            if (typeof base[k] === 'object' && typeof layer[k] === 'object') this._supplementConfig(base[k], layer[k])
+            else if (base[k] === undefined || base[k] === null) base[k] = layer[k]
         }
         return base
     },

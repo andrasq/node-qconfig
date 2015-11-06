@@ -9,23 +9,77 @@ specified by name or by regular expression.
 Features
 --------
 
-* short, simple, no dependencies
-* hierarchical, with multiple inheritance
-* inheritance hierarchy can be configured by absolute name name or by regular expression
-* configurable config file loader
-* can find config directory along filepath
+* simple, no dependencies
+* hierarchical, with configurable multiple inheritance
+* config hierarchy can be matched to environment by name or by regular expression
+* configurable config file loader, supports any config file format
 * shareable, can be called from multiple places
+* can locate config directory along filepath, does not require the current working directory to be set
+* supports different configurations for multiple apps all started from the same directory
+* specify environment with NODE_ENV or opts.env
+* specify configuration directory to use with NODE_CONFIG_DIR or opts.
+* can read additional project-specific opts settings from `config/qconfig.conf.js`
 
 
 Usage
 -----
 
-        // load the default configuration (set in the NODE_ENV env var)
-        // the config is read from the nearest enclosing '/config' dir
+Simple project layout
+
+        app/
+            lib/
+            test/
+            config/
+            index.js: require('qconfig') => app/config
+
+Complex project layout
+
+        app/
+            lib/
+            test/
+            config/
+            index.js: require('qconfig') => app/config
+            services/
+                s1/
+                    lib/
+                    test/
+                    config/
+                    index.js: require('qconfig) => app/services/s1/config
+                s2/
+                    lib/
+                    test/
+                    config/
+                    index.js: require('qconfig) => app/services/s2/config
+
+
+Quick Guide
+-----------
+
+### Common Usage
+
+Load the default configuration named by the NODE_ENV environment variable
+(else 'development' by default).  The configuration is searched for and is
+read from the nearest enclosing '/config' directory.
+
         var config = require('qconfig')
 
-        // load the 'staging' configuration
+As above, but load the 'staging' configuration overriding NODE_ENV
+
         var config = require('qconfig/load')({ env: 'staging' })
+
+Load the 'staging' configuration from the altConfigs directory, overriding
+NODE_ENV and the config directory search
+
+        var config = require('qconfig/load')({
+            env: 'staging',
+            configDirectory: 'altConfigs'
+        })
+
+### Configuration Environments
+
+### Defining Inheritance Hierarchies
+
+### Configation File Formats
 
 
 API
@@ -59,8 +113,7 @@ case the implementation class is not exported.  To help disambiguate, the QConfi
 class is also exported as `require('qconfig/qconfig')`
 
         var config = require('qconfig')
-        var QConfig = require('qconfig').QConfig
-        var QConfig = require('qconfig/qconfig')
+        qconfig.QConfig === require('qconfig/qconfig')
 
 ### config = require('qconfig/load')( opts )
 
@@ -68,8 +121,11 @@ Shortcut for loading a custom configuration.  Returns a function that uses a new
 QConfig instance to load the environment specified in `opts.env` (else the default).
 
         var QConfig = require('qconfig/qconfig')
-        var config = new QConfig(opts).load()
-        // same as config = require('qconfig/load')(opts)
+        config = require('qconfig/load')(opts)
+        config === new QConfig(opts).load()
+
+Configurations loaded with `qconfig/load` or the `load()` method do not have
+a QConfig property set.
 
 ### QConfig = require('qconfig/qconfig')
 
@@ -88,7 +144,8 @@ Options:
 * `dirName` - relative directory name holding the config files (default `config`)
 * `configDirectory` - absolute directory name holding the config files (no default).
   If not specified in options looks for the `NODE_CONFIG_DIR` environment variable,
-  or searches up along the directory path of the calling file.
+  or searches up along the directory path of the calling file.  `dir` is accepted
+  as an alias for configDirectory.
 * `layers` - the inherits-from list of environments.  The default inheritance rules are
   `{ default: [], development: ['default'], staging: ['default'], production: ['default'],
   canary: ['production'], custom: ['production'] }`.
@@ -115,11 +172,17 @@ not configured, returns an empty config `{ }`.
 ChangeLog
 ---------
 
+1.2.1
+
+* fix .json config file loading
+* make call-time options override qconfig.conf
+
 1.2.0
 
 * allow regular expressions (object or string) as layer names
 * use NODE_CONFIG_DIR env var when locating config directory
 * also load settings from config/qconfig.conf.js or .json
+* built-in `custom` environment
 
 1.1.1
 
