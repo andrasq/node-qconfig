@@ -22,7 +22,7 @@ function QConfig( opts ) {
         dirName: opts.dirName || 'config',
         configDirectory: null,
         loadConfig: opts.loader || require,
-        extensions: ['', '.js', '.json'],
+        extensions: opts.extensions || ['', '.js', '.json'],
         layers: [],
     }
     this.opts.configDirectory =
@@ -36,15 +36,18 @@ function QConfig( opts ) {
         canary: ['production'],
         custom: ['production'],
     })
-    if (opts.layers) this._installLayers(opts.layers)
 
     // read additional config settings from config/qconfig.conf
+    // the qconfig.conf settings are merged in beneath opts, to have caller settings override
     try {
-        var opts = require(this.opts.configDirectory + "/qconfig.conf")
-        if (opts.layers) { this._installLayers(opts.layers) ; delete opts.layers }
-        this._supplementConfig(this.opts, opts)
+        var conf = require(this.opts.configDirectory + "/qconfig.conf")
+        if (conf.layers) { this._installLayers(conf.layers) ; delete conf.layers }
+        this._supplementConfig(this.opts, conf)
     }
     catch (e) { }
+
+    // caller-specified layering overrides qconfig.conf
+    if (opts.layers) this._installLayers(opts.layers)
 }
 
 QConfig.prototype = {
@@ -65,6 +68,7 @@ QConfig.prototype = {
                 this._layerConfig(config, this.load(layers[i]), configDirectory, true)
             }
         }
+        // else falsy layers are skipped
         this._layerConfig(config, this._loadConfigFile(env, configDirectory, _nested))
         this._depth -= 1
         return config

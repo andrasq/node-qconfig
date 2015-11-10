@@ -81,6 +81,14 @@ module.exports = {
                 t.equal(config.canary, 'config3')
                 t.done();
             },
+
+            'caller-specified layers should override qconfig.conf': function(t) {
+                var qconf = new qconfig.QConfig({ dirName: 'config3', layers: {preconfigured: ['other3']} })
+                var config = qconf.load('preconfigured')
+                console.log("AR:", config)
+                t.equal(config.name, 'other3')
+                t.done();
+            },
         },
 
         'load': {

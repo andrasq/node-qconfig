@@ -17,7 +17,7 @@ Features
 * can locate config directory along filepath, does not require the current working directory to be set
 * supports different configurations for multiple apps all started from the same directory
 * specify environment with NODE_ENV or opts.env
-* specify configuration directory to use with NODE_CONFIG_DIR or opts.
+* specify configuration directory to use with NODE_CONFIG_DIR or opts.configDirectory
 * can read additional project-specific opts settings from `config/qconfig.conf.js`
 
 
@@ -75,9 +75,44 @@ NODE_ENV and the config directory search
             configDirectory: 'altConfigs'
         })
 
+As above, but using 'qconfig'
+
+        process.env.NODE_ENV = 'staging'
+        process.env.NODE_CONFIG_DIR = 'altConfigs'
+        var config = require('qconfig')
+
 ### Configuration Environments
 
-### Defining Inheritance Hierarchies
+### Default Settings
+
+Qconfig default settings can be built in or loaded from `qconfig.conf` in the
+target configuration directory.  The `qconfig.conf` file can be any format that
+is loadable by `require()`, typically `.js`, `.json` and `.coffee`.
+
+### Built In
+
+- `env` - config environment to load (default `development`)
+- `dirName` - config directory name (default `config`)
+- `configDirectory` - config directory filepath (default is to search on calling file filepath)
+- `layers` - configuration inheritance hierarchy, see Inheritance Hierarchies below
+- `loader` - function to use to convert the config files to objects
+  (default `require`)
+- `extensions` - config filename extensions to look for, see Configuration File
+  Formats below (default `['', '.js', '.json']`)
+
+#### qconfig.conf
+
+Qconfig.conf should evaluate to an object in the same format as the QConfig
+constructor opts and may contain any option (though the ones used to locate the
+config directory will not be used).  This provides a handy place to customize
+the project inheritance hierarchy and/or config file format.  The format of
+qconfig.conf must be understood by the node built-in `require()`.
+
+- `layers`
+- `loader`
+- `extensions`
+
+### Inheritance Hierarchies
 
 ### Configation File Formats
 
@@ -149,8 +184,10 @@ Options:
 * `layers` - the inherits-from list of environments.  The default inheritance rules are
   `{ default: [], development: ['default'], staging: ['default'], production: ['default'],
   canary: ['production'], custom: ['production'] }`.
-  Passed in layers are merged into the defaults; to delete layer set it to `undefined`.
+  Passed in layers are merged into the defaults; to delete a layer set it to falsy.
 * `loader` - function to read and parse the config file (default `require()`)
+* `extensions` - config filename extensions to try to load, in order `['', '.js', '.json']`.
+  The object returned by the first successful load (no error thrown) is used.
 
         var QConfig = require('qconfig/qconfig')
         var qconf = new QConfig()
@@ -171,6 +208,10 @@ not configured, returns an empty config `{ }`.
 
 ChangeLog
 ---------
+
+1.2.2
+
+* fix caller-specified layering overrides qconfig.conf
 
 1.2.1
 
