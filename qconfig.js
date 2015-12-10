@@ -138,10 +138,14 @@ QConfig.prototype = {
         if (!_nested) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
     },
 
+    _isHash: function _isHash( a ) {
+        return (a) && (typeof a === 'object') && !(a instanceof Date) && !(a instanceof RegExp) && !(Array.isArray(a))
+    },
+
     // merge layer into base, overriding existing
     _layerConfig: function _layerConfig( base, layer ) {
         for (var k in layer) {
-            if (typeof base[k] === 'object' && typeof layer[k] === 'object') this._layerConfig(base[k], layer[k])
+            if (this._isHash(base[k]) && this._isHash(layer[k])) this._layerConfig(base[k], layer[k])
             else base[k] = layer[k]
         }
         return base
@@ -150,7 +154,7 @@ QConfig.prototype = {
     // merge layer into base, retaining existing
     _supplementConfig: function _supplementConfig( base, layer ) {
         for (var k in layer) {
-            if (typeof base[k] === 'object' && typeof layer[k] === 'object') this._supplementConfig(base[k], layer[k])
+            if (this._isHash(base[k]) && this._isHash(layer[k])) this._supplementConfig(base[k], layer[k])
             else if (base[k] === undefined || base[k] === null) base[k] = layer[k]
         }
         return base

@@ -209,6 +209,10 @@ not configured, returns an empty config `{ }`.
 ChangeLog
 ---------
 
+1.2.3
+
+* allow Array, Date, and RegExp objects in config files
+
 1.2.2
 
 * fix caller-specified layering overrides qconfig.conf
@@ -243,5 +247,5 @@ ChangeLog
 Related Work
 ------------
 
-* [config](http://npmjs.com/package/config) - what everyone uses
 * [config-node](http://npmjs.com/package/config-node) - tiny lean config loader with a great Readme
+* [config](http://npmjs.com/package/config) - limited and inflexible, but seems to be popular
