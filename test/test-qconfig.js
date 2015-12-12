@@ -60,9 +60,25 @@ module.exports = {
                 t.done()
             },
 
-            'should incorporate new layers': function(t) {
+            'should incorporate new preload layers': function(t) {
                 var qconf = new qconfig.QConfig({layers: {target: ['layer1', 'layer2']}})
-                t.deepEqual(qconf._findLayers('target'), ['layer1', 'layer2'])
+                t.deepEqual(qconf._findLayers(qconf.preload, 'target'), ['layer1', 'layer2'])
+                t.done()
+            },
+
+            'should register postload layers': function(t) {
+                var qconf = new qconfig.QConfig({postload: {target: ['layerN1', 'layerN']}})
+                t.deepEqual(qconf._findLayers(qconf.postload, 'target'), ['layerN1', 'layerN'])
+                t.done()
+            },
+
+            'should combine preload and postload layers': function(t) {
+                var qconf = new qconfig.QConfig({postload: {development: ['canary']}})
+                var conf = qconf.load();
+                t.equal(conf.development, true)
+                t.equal(conf.production, true)
+                t.equal(conf.canary, true)
+                t.equal(conf.name, 'canary')
                 t.done()
             },
 
@@ -87,6 +103,23 @@ module.exports = {
                 var config = qconf.load('preconfigured')
                 t.equal(config.name, 'other3')
                 t.done();
+            },
+
+            '_installLayers should build regexes from regex strings': function(t) {
+                var qconf = new qconfig.QConfig({ layers: {'/te\/s*t/i': ['a', 'b']} })
+                var last = qconf.preload.pop()
+                t.ok(last[0] instanceof RegExp)
+                t.equal(last[0].toString(), '/te\/s*t/i')
+                t.deepEqual(last[1], ['a', 'b'])
+                t.done()
+            },
+
+            '_installLayers should accept regex array': function(t) {
+                var qconf = new qconfig.QConfig({ layers: [ [/te\/s*t/i, ['a', 'b']] ] })
+                var last = qconf.preload.pop()
+                t.equal(last[0].toString(), '/te\\/s*t/i')
+                t.deepEqual(last[1], ['a', 'b'])
+                t.done()
             },
         },
 
@@ -160,15 +193,9 @@ module.exports = {
             },
         },
 
-        '_layerConfig should overwrite existing': function(t) {
-            var conf = this.qconf._layerConfig({a:1, b:2, c:{a:3, b:4}}, {b:22, c:{a:4, d:5}})
+        'merge should overwrite existing': function(t) {
+            var conf = this.qconf.merge({a:1, b:2, c:{a:3, b:4}}, {b:22, c:{a:4, d:5}})
             t.deepEqual(conf, {a:1, b:22, c:{a:4, b:4, d:5}})
-            t.done()
-        },
-
-        '_supplementConfig should retain existing': function(t) {
-            var conf = this.qconf._supplementConfig({a:1, b:2, c:{a:3, b:4}}, {b:22, c:{a:4, d:5}, d:55})
-            t.deepEqual(conf, {a:1, b:2, c:{a:3, b:4, d:5}, d:55})
             t.done()
         },
 

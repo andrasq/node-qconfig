@@ -94,7 +94,8 @@ is loadable by `require()`, typically `.js`, `.json` and `.coffee`.
 - `env` - config environment to load (default `development`)
 - `dirName` - config directory name (default `config`)
 - `configDirectory` - config directory filepath (default is to search on calling file filepath)
-- `layers` - configuration inheritance hierarchy, see Inheritance Hierarchies below
+- `preload` - pre-install configuration inheritance hierarchy, see Inheritance Hierarchies below
+- `postload` - post-install configuration inheritance hierarchy, see Inheritance Hierarchies below
 - `loader` - function to use to convert the config files to objects
   (default `require`)
 - `extensions` - config filename extensions to look for, see Configuration File
@@ -108,7 +109,8 @@ config directory will not be used).  This provides a handy place to customize
 the project inheritance hierarchy and/or config file format.  The format of
 qconfig.conf must be understood by the node built-in `require()`.
 
-- `layers`
+- `preload`
+- `postload`
 - `loader`
 - `extensions`
 
@@ -181,10 +183,11 @@ Options:
   If not specified in options looks for the `NODE_CONFIG_DIR` environment variable,
   or searches up along the directory path of the calling file.  `dir` is accepted
   as an alias for configDirectory.
-* `layers` - the inherits-from list of environments.  The default inheritance rules are
+* `preload` - the inherits-from list of environments.  The default inheritance rules are
   `{ default: [], development: ['default'], staging: ['default'], production: ['default'],
   canary: ['production'], custom: ['production'] }`.
   Passed in layers are merged into the defaults; to delete a layer set it to falsy.
+* `postload` - the overridden-with list of environments.  The default is none, `[]`.
 * `loader` - function to read and parse the config file (default `require()`)
 * `extensions` - config filename extensions to try to load, in order `['', '.js', '.json']`.
   The object returned by the first successful load (no error thrown) is used.
@@ -208,6 +211,15 @@ not configured, returns an empty config `{ }`.
 
 ChangeLog
 ---------
+
+1.3.0
+
+* accept `preload` to mean `layers` for pre-install layers
+* introduce `postload` post-install layers
+* test with qnit
+* only load config files that explicitly occur in `extensions`
+* simplify bootstrap, remove _supplementConfig
+* guard against runaway merge recursion
 
 1.2.3
 

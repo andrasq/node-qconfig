@@ -19,16 +19,18 @@ function QConfig( opts ) {
     this.opts = {
         env: opts.env || process.env.NODE_ENV || 'development',
         caller: opts.caller || QConfig.getCallingFile(new Error().stack),
-        dirName: opts.dirName || 'config',
-        configDirectory: null,
-        loadConfig: opts.loader || require,
-        extensions: opts.extensions || ['', '.js', '.json'],
-        layers: [],
+        dirName: opts.dirName || opts.dirname || 'config',
+        configDirectory: opts.configDirectory || opts.dir || process.env.NODE_CONFIG_DIR || null,
+        loader: opts.loader || require,
+        extensions: opts.extensions || ['.js', '.json', '.coffee'],     // extensions to try, in order
     }
-    this.opts.configDirectory =
-        opts.configDirectory || opts.dir || process.env.NODE_CONFIG_DIR || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
+    this.opts.configDirectory = this.opts.configDirectory || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
 
-    this._installLayers({
+    var qconf = this._loadConfigFile('qconfig.conf', this.opts.configDirectory, true)
+    this.opts = this.merge(this.opts, qconf)
+    this.opts = this.merge(this.opts, opts)
+
+    this.preload = this._installLayers([], {
         default: [],
         development: ['default'],
         staging: ['default'],
@@ -36,22 +38,16 @@ function QConfig( opts ) {
         canary: ['production'],
         custom: ['production'],
     })
-
-    // read additional config settings from config/qconfig.conf
-    // the qconfig.conf settings are merged in beneath opts, to have caller settings override
-    try {
-        var conf = require(this.opts.configDirectory + "/qconfig.conf")
-        if (conf.layers) { this._installLayers(conf.layers) ; delete conf.layers }
-        this._supplementConfig(this.opts, conf)
-    }
-    catch (e) { }
-
-    // caller-specified layering overrides qconfig.conf
-    if (opts.layers) this._installLayers(opts.layers)
+    this.postload = []
+    if (this.opts.layers) this._installLayers(this.preload, this.opts.layers)
+    if (this.opts.preload) this._installLayers(this.preload, this.opts.preload)
+    if (this.opts.postload) this._installLayers(this.postload, this.opts.postload)
 }
 
 QConfig.prototype = {
     opts: null,
+    preload: null,
+    postload: null,
     _depth: 0,
 
     load: function load( env, configDirectory, _nested ) {
@@ -61,54 +57,53 @@ QConfig.prototype = {
         var calledFrom = QConfig.getCallingFile(new Error().stack)
 
         this._depth += 1
-        var config = {}, layers = this._findLayers(env)
-        if (layers) {
-            if (this._depth > 100) throw new Error("runaway recursion")
-            for (var i=0; i<layers.length; i++) {
-                this._layerConfig(config, this.load(layers[i]), configDirectory, true)
-            }
+        if (this._depth > 100) throw new Error("runaway layer recursion")
+        var config = {}, layers
+
+        // install the preload layers
+        layers = this._findLayers(this.preload, env)
+        if (layers) for (var i=0; i<layers.length; i++) {
+            this.merge(config, this.load(layers[i]), configDirectory, true)
         }
-        // else falsy layers are skipped
-        this._layerConfig(config, this._loadConfigFile(env, configDirectory, _nested))
+
+        this.merge(config, this._loadConfigFile(env, configDirectory, _nested))
+
+        // install the postload layers
+        layers = this._findLayers(this.postload, env)
+        if (layers) for (var i=0; i<layers.length; i++) {
+            this.merge(config, this.load(layers[i]), configDirectory, true)
+        }
+
         this._depth -= 1
         return config
     },
 
-    _installLayers: function _installLayers( layering ) {
-        if (!this.opts.layers) this.opts.layers = [
-            // list of [environment name, list of environments it inherits from] tuples
-            // environment name can be a string or a regex pattern
-        ]
-        var layerStack = this.opts.layers
-        if (Array.isArray(layering) && Array.isArray(layering[0])) {
-            for (var i=0; i<layering.length; i++) installLayer(layering[i][0], layering[i].slice(1))
-        }
-        else if (Array.isArray(layering)) {
-            installLayer(layering[0], layering.slice(1))
-        }
-        else {
-            for (var i in layering) installLayer(i, layering[i])
-        }
-
-        function installLayer( name, inheritsFrom ) {
-            if (name instanceof RegExp) {
-                layerStack.push([name, inheritsFrom])           // regex object
+    _installLayers: function _installLayers( layerStack, layering ) {
+        if (Array.isArray(layering)) {
+            for (var i=0; i<layering.length; i++) {
+                if (typeof layering[i][0] === 'string' || layering[i][0] instanceof RegExp) {
+                    layerStack.push(layering[i])
+                }
             }
-            else if (name[0] === '/' && name[name.length-1] === '/') {
-                var pattern = new RegExp(name.slice(1, -1))
+        }
+        else for (var name in layering) {
+            var inheritsFrom = layering[name] 
+            if (name[0] === '/' && name.lastIndexOf('/') > 0) {
+                var flagIdx = name.lastIndexOf('/')
+                var pattern = new RegExp(name.slice(1, flagIdx), name.slice(flagIdx+1))
                 layerStack.push([pattern, inheritsFrom])        // regex object from string
             }
             else {
                 layerStack.push([name, inheritsFrom])           // string
             }
         }
+        return layerStack
     },
 
-    _findLayers: function _findLayers( env ) {
-        // matching layer O(n) linear search, faster than hash for short lists
-        // search newest to oldest, newest matching entry wins
-        var layers = this.opts.layers
+    _findLayers: function _findLayers( layers, env ) {
+        // linear search newest to oldest, newest matching entry wins
         for (var i=layers.length-1; i>=0; i--) {
+            // TODO: if (layers[i][0] == env || layers[i][0].test && layers[i][0].test(env)) return layres[i][1]
             if (typeof layers[i][0] === 'string') {
                 if (layers[i][0] === env) return layers[i][1]
             }
@@ -119,43 +114,32 @@ QConfig.prototype = {
         return null
     },
 
-    _loadConfigFile: function _loadConfigFile( env, configDirectory, _nested ) {
+    _loadConfigFile: function _loadConfigFile( env, configDirectory, _silenced ) {
         var file = configDirectory + "/" + env
+        var filename, loader = this.opts.loader
         for (var i=0; i<this.opts.extensions.length; i++) {
             // TODO: match the loader to the filename extension
-            var loadConfig = this.opts.loadConfig
-            try {
-                return loadConfig(file + this.opts.extensions[i])
-            }
-            catch (err) {
-                // "not found" is ok, other errors are fatal
-                if (err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err
-            }
+            filename = file + this.opts.extensions[i]
+            try { return fs.statSync(filename) && loader(filename) }
+            catch (err) { if (err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err }
         }
         // if the user-supplied loader does not succeed, fall back to the built-in require()
-        try { return require(file) } catch (e) { }
+        try { return require(file) } catch (e) { return {} }
         // warn if the requested environment is not configured
-        if (!_nested) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
+        if (!_silenced) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
     },
 
     _isHash: function _isHash( a ) {
-        return (a) && (typeof a === 'object') && !(a instanceof Date) && !(a instanceof RegExp) && !(Array.isArray(a))
+        return (a) && Object.prototype.toString.call(a) === '[object Object]'
     },
 
-    // merge layer into base, overriding existing
-    _layerConfig: function _layerConfig( base, layer ) {
+    // recursively merge layer into base, overriding existing in base
+    merge: function merge( base, layer, _depth ) {
+        _depth = _depth || 0
+        if (_depth > 100) throw new Error("runaway merge recursion")
         for (var k in layer) {
-            if (this._isHash(base[k]) && this._isHash(layer[k])) this._layerConfig(base[k], layer[k])
+            if (this._isHash(base[k]) && this._isHash(layer[k])) this.merge(base[k], layer[k], _depth+1)
             else base[k] = layer[k]
-        }
-        return base
-    },
-
-    // merge layer into base, retaining existing
-    _supplementConfig: function _supplementConfig( base, layer ) {
-        for (var k in layer) {
-            if (this._isHash(base[k]) && this._isHash(layer[k])) this._supplementConfig(base[k], layer[k])
-            else if (base[k] === undefined || base[k] === null) base[k] = layer[k]
         }
         return base
     },
@@ -182,7 +166,7 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     stack = stack.split('\n')
 
     // find just the js files with absolute filepaths, skip [eval] and built-in sources
-    var line, sourceLines = [];
+    var line, sourceLines = []
     while ((line = stack.shift())) {
         if (sourceFilename.test(line)) sourceLines.push(line)
     }
@@ -215,3 +199,7 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
 }
 
 module.exports = QConfig
+module.exports.load = function( opts ) {
+    var qconf = new QConfig(opts)
+    return qconf.load(opts.env)
+}

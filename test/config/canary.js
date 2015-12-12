@@ -1,1 +1,1 @@
-module.exports = { canary: true }
+module.exports = { canary: true, name: 'canary' }

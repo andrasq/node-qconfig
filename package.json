@@ -1,6 +1,6 @@
 {
   "name": "qconfig",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "description": "small, light configuration loader",
   "main": "index.js",
   "author": "Andras",
@@ -13,7 +13,7 @@
     "configuration", "conf", "config", "small", "fast", "easy", "simple", "node-config", "config-node"
   ],
   "scripts": {
-    "test": "qunit test/test-*"
+    "test": "qnit test/test-*"
   },
   "bugs": {
     "url": "https://github.com/andrasq/node-qrpc/issues"
@@ -22,6 +22,6 @@
   "dependencies": {
   },
   "devDependencies": {
-    "node-qunit": "*"
+    "qnit": "*"
   }
 }

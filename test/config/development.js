@@ -1,1 +1,1 @@
-module.exports = { b: 2, development: true }
+module.exports = { b: 2, development: true, name: 'development' }
