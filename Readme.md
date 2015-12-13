@@ -186,7 +186,7 @@ Options:
 * `preload` - the inherits-from list of environments.  The default inheritance rules are
   `{ default: [], development: ['default'], staging: ['default'], production: ['default'],
   canary: ['production'], custom: ['production'] }`.  Also recognized as `layers`.
-  Passed in layers are merged into the defaults; to delete a layer set it to falsy.
+  Passed in layers are merged into the defaults; to delete a layer define it as falsy.
 * `postload` - the overridden-with list of environments.  The default is none, `[]`.
 * `loader` - function to read and parse the config file (default `require()`) or a
   hash mapping extensions to loader functions
