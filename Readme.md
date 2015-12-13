@@ -35,7 +35,8 @@ read from the nearest enclosing '/config' directory.
 
         var config = require('qconfig')
 
-As above, but load the 'staging' configuration overriding NODE_ENV
+As above, but using 'qconfig.load', a function that allows arbitrary options
+to be used while loading
 
         var config = require('qconfig/load')({ env: 'staging' })
 
