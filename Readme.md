@@ -97,10 +97,10 @@ Elementary `config` compatibility can be configured in qconfig.conf, for example
 
         {
           preload: {
-            'development|staging|production': ['default']
+            '/development|staging|production/': ['default']
           },
           postload: {
-            'development|staging|production': ['local']
+            '/development|staging|production/': ['local']
           }
         }
 
