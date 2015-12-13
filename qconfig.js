@@ -89,7 +89,8 @@ QConfig.prototype = {
             }
         }
         else for (var name in layering) {
-            var inheritsFrom = layering[name] 
+            var inheritsFrom = layering[name]
+            if (!Array.isArray(inheritsFrom)) inheritsFrom = [inheritsFrom]
             if (name[0] === '/' && name.lastIndexOf('/') > 0) {
                 var flagIdx = name.lastIndexOf('/')
                 var pattern = new RegExp(name.slice(1, flagIdx), name.slice(flagIdx+1))

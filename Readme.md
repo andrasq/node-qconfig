@@ -21,37 +21,6 @@ Features
 * can read additional project-specific opts settings from `config/qconfig.conf.js`
 
 
-Usage
------
-
-Simple project layout
-
-        app/
-            lib/
-            test/
-            config/
-            index.js: require('qconfig') => app/config
-
-Complex project layout
-
-        app/
-            lib/
-            test/
-            config/
-            index.js: require('qconfig') => app/config
-            services/
-                s1/
-                    lib/
-                    test/
-                    config/
-                    index.js: require('qconfig) => app/services/s1/config
-                s2/
-                    lib/
-                    test/
-                    config/
-                    index.js: require('qconfig) => app/services/s2/config
-
-
 Quick Guide
 -----------
 
@@ -121,6 +90,49 @@ qconfig.conf must be understood by the node built-in `require()`.
 ### Inheritance Hierarchies
 
 ### Configation File Formats
+
+### `Config` compatibility
+
+Elementary `config` compatibility can be configured in qconfig.conf, for example
+
+        {
+          preload: {
+            'development|staging|production': ['default']
+          },
+          postload: {
+            'development|staging|production': ['local']
+          }
+        }
+
+Layout
+------
+
+Simple project layout
+
+        app/
+            lib/
+            test/
+            config/
+            index.js: require('qconfig') => app/config
+
+Complex project layout
+
+        app/
+            lib/
+            test/
+            config/
+            index.js: require('qconfig') => app/config
+            services/
+                s1/
+                    lib/
+                    test/
+                    config/
+                    index.js: require('qconfig) => app/services/s1/config
+                s2/
+                    lib/
+                    test/
+                    config/
+                    index.js: require('qconfig) => app/services/s2/config
 
 
 API
@@ -220,6 +232,11 @@ not configured, returns an empty config `{ }`.
 
 ChangeLog
 ---------
+
+1.5.0
+
+* accept an optional `env` parameter to `qconfig/load`
+* allow preload layers to be strings (layer names), not just arrays of strings
 
 1.4.0
 
