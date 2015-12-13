@@ -92,7 +92,7 @@ is loadable by `require()`, typically `.js`, `.json` and `.coffee`.
 ### Built In
 
 - `env` - config environment to load (default `development`)
-- `dirName` - config directory name (default `config`)
+- `dirname` - config directory name (default `config`)
 - `dir` - config directory filepath (default is to search on calling file filepath)
 - `preload` - pre-install configuration inheritance hierarchy, see Inheritance Hierarchies below
 - `postload` - post-install configuration inheritance hierarchy, see Inheritance Hierarchies below
@@ -112,7 +112,6 @@ qconfig.conf must be understood by the node built-in `require()`.
 - `preload`
 - `postload`
 - `loader`
-- `extensions`
 
 ### Inheritance Hierarchies
 
@@ -178,8 +177,8 @@ Options:
 * `env` - name of config section to load, as can also be passed to `load()`.
   If not specified in options looks for the NODE_ENV environment variable,
   or uses the default `development`.
-* `dirName` - relative directory name holding the config files (default `config`).
-  Also recognized as `dirname`.
+* `dirname` - relative directory name holding the config files (default `config`).
+  Also recognized as `dirName`.
 * `dir` - absolute directory name holding the config files (no default).
   If not specified in options looks for the `NODE_CONFIG_DIR` environment variable,
   or searches up along the directory path of the calling file.  `configDirectory`
@@ -189,9 +188,11 @@ Options:
   canary: ['production'], custom: ['production'] }`.  Also recognized as `layers`.
   Passed in layers are merged into the defaults; to delete a layer set it to falsy.
 * `postload` - the overridden-with list of environments.  The default is none, `[]`.
-* `loader` - function to read and parse the config file (default `require()`)
-* `extensions` - config filename extensions to try to load, in order `['', '.js', '.json']`.
-  The object returned by the first successful load (no error thrown) is used.
+* `loader` - function to read and parse the config file (default `require()`) or a
+  hash mapping extensions to loader functions
+* `extensions` - config filename extensions to try to load with the `loader` function,
+  in order `['', '.js', '.json', '.coffee']`.  The object returned by the first successful load
+  (no error thrown) is the one used.
 
         var QConfig = require('qconfig/qconfig')
         var qconf = new QConfig()
@@ -212,6 +213,12 @@ not configured, returns an empty config `{ }`.
 
 ChangeLog
 ---------
+
+1.4.0
+
+* accept a `loader` object that maps extensions to loader functions
+* prefer dirname over dirName
+* prefer dir over configDirectory
 
 1.3.0
 

@@ -19,12 +19,12 @@ function QConfig( opts ) {
     this.opts = {
         env: opts.env || process.env.NODE_ENV || 'development',
         caller: opts.caller || QConfig.getCallingFile(new Error().stack),
-        dirName: opts.dirname || opts.dirName || 'config',
+        dirname: opts.dirname || opts.dirName || 'config',
         configDirectory: opts.dir || opts.configDirectory || process.env.NODE_CONFIG_DIR || null,
         loader: opts.loader || require,
         extensions: opts.extensions || ['.js', '.json', '.coffee'],     // extensions to try, in order
     }
-    this.opts.configDirectory = this.opts.configDirectory || this._locateConfigDirectory(this.opts.caller, this.opts.dirName)
+    this.opts.configDirectory = this.opts.configDirectory || this._locateConfigDirectory(this.opts.caller, this.opts.dirname)
 
     var qconf = this._loadConfigFile('qconfig.conf', this.opts.configDirectory, true)
     this.opts = this.merge(this.opts, qconf)
@@ -42,6 +42,8 @@ function QConfig( opts ) {
     if (this.opts.layers) this._installLayers(this.preload, this.opts.layers)
     if (this.opts.preload) this._installLayers(this.preload, this.opts.preload)
     if (this.opts.postload) this._installLayers(this.postload, this.opts.postload)
+
+    this.opts.loader = this._normalizeLoader(this.opts.loader, this.opts.extensions)
 }
 
 QConfig.prototype = {
@@ -117,16 +119,26 @@ QConfig.prototype = {
     _loadConfigFile: function _loadConfigFile( env, configDirectory, _silenced ) {
         var file = configDirectory + "/" + env
         var filename, loader = this.opts.loader
-        for (var i=0; i<this.opts.extensions.length; i++) {
-            // TODO: match the loader to the filename extension
-            filename = file + this.opts.extensions[i]
-            try { return fs.statSync(filename) && loader(filename) }
+        for (var ext in loader) {
+            filename = file + ext
+            try { return fs.statSync(filename) && loader[ext](filename) }
             catch (err) { if (err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err }
         }
         // if the user-supplied loader does not succeed, fall back to the built-in require()
         try { return require(file) } catch (e) { return {} }
         // warn if the requested environment is not configured
         if (!_silenced) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
+    },
+
+    _normalizeLoader: function _normalizeLoader( loader, extensions ) {
+        if (typeof this.opts.loader === 'function') {
+            if (!Array.isArray(extensions)) extensions = []
+            if (!extensions.length) exts.push('')
+            var extensionLoader = {}
+            for (var i in extensions) extensionLoader[extensions[i]] = loader
+            return extensionLoader
+        }
+        else return loader
     },
 
     _isHash: function _isHash( a ) {

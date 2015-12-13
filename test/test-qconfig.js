@@ -91,6 +91,15 @@ module.exports = {
                 t.done()
             },
 
+            'should accept loader object': function(t) {
+                var called = false
+                function loadConfig(filename) { called = true; return require(filename) }
+                var qconf = new qconfig.QConfig({loader: {'.js': loadConfig}})
+                qconf.load('default')
+                t.equal(called, true)
+                t.done()
+            },
+
             'should apply qconfig.conf found in config dir': function(t) {
                 var qconf = new qconfig.QConfig({ dirName: 'config3' })
                 var config = qconf.load('preconfigured')
