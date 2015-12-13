@@ -36,7 +36,7 @@ As above, but load the 'staging' configuration overriding NODE_ENV
 
         var config = require('qconfig/load')({ env: 'staging' })
 
-Load the 'staging' configuration from the altConfigs directory, overriding
+Load the 'staging' configuration from the testConfigs directory, overriding
 NODE_ENV and the config directory search
 
         var config = require('qconfig/load')({
@@ -49,11 +49,6 @@ As above, but using 'qconfig'
         process.env.NODE_ENV = 'staging'
         process.env.NODE_CONFIG_DIR = 'testConfigs'
         var config = require('qconfig')
-
-As above, but using 'qconfig.load'
-
-        var qconfig = require(qconfig).QConfig
-        var config = QConfig.load({ env: 'staging', dir: 'testConfigs'})
 
 ### Configuration Environments
 
