@@ -5,6 +5,9 @@ Small, light configuration loader.  Loads json and javascript config files (also
 coffee-script).  Configuration can be hierarchical, inheriting from multiple sources
 specified by name or by regular expression.
 
+Configurations are returned as hierarchical key-value objects (hashes) without
+methods on them.
+
 
 Features
 --------
@@ -84,11 +87,17 @@ qconfig.conf must be understood by the node built-in `require()`.
 
 ### Inheritance Hierarchies
 
+Config sections can load other config sections as prerequisites, and load other
+config sections as overrides.  These are configured in the `preload` and `postload`
+sections of `qconfig.conf`, or via the `preload` and `postload` properties of the
+constructor options.
+
 ### Configation File Formats
 
-### `Config` compatibility
+### Config compatibility
 
-Elementary `config` compatibility can be configured in qconfig.conf, for example
+[Config](http://npmjs.com/package/config) compatibility can be configured in
+qconfig.conf, for example
 
         {
           preload: {
@@ -98,6 +107,7 @@ Elementary `config` compatibility can be configured in qconfig.conf, for example
             '/development|staging|production/': ['local']
           }
         }
+
 
 Layout
 ------
