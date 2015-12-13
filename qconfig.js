@@ -211,7 +211,3 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
 }
 
 module.exports = QConfig
-module.exports.load = function( env, opts ) {
-    if (opts === undefined) { opts = env; env = null }
-    return new QConfig(opts).load(env)
-}

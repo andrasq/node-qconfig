@@ -72,14 +72,19 @@ NODE_ENV and the config directory search
 
         var config = require('qconfig/load')({
             env: 'staging',
-            configDirectory: 'altConfigs'
+            dir: 'testConfigs'
         })
 
 As above, but using 'qconfig'
 
         process.env.NODE_ENV = 'staging'
-        process.env.NODE_CONFIG_DIR = 'altConfigs'
+        process.env.NODE_CONFIG_DIR = 'testConfigs'
         var config = require('qconfig')
+
+As above, but using 'qconfig.load'
+
+        var qconfig = require(qconfig).QConfig
+        var config = QConfig.load({ env: 'staging', dir: 'testConfigs'})
 
 ### Configuration Environments
 
@@ -151,7 +156,7 @@ class is also exported as `require('qconfig/qconfig')`
         var config = require('qconfig')
         qconfig.QConfig === require('qconfig/qconfig')
 
-### config = require('qconfig/load')( opts )
+### config = require('qconfig/load')( [env,] opts )
 
 Shortcut for loading a custom configuration.  Returns a function that uses a new
 QConfig instance to load the environment specified in `opts.env` (else the default).
@@ -161,7 +166,7 @@ QConfig instance to load the environment specified in `opts.env` (else the defau
         config === new QConfig(opts).load()
 
 Configurations loaded with `qconfig/load` or the `load()` method do not have
-a QConfig property set.
+the QConfig property set.
 
 ### QConfig = require('qconfig/qconfig')
 
