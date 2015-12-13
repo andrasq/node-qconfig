@@ -93,7 +93,7 @@ is loadable by `require()`, typically `.js`, `.json` and `.coffee`.
 
 - `env` - config environment to load (default `development`)
 - `dirName` - config directory name (default `config`)
-- `configDirectory` - config directory filepath (default is to search on calling file filepath)
+- `dir` - config directory filepath (default is to search on calling file filepath)
 - `preload` - pre-install configuration inheritance hierarchy, see Inheritance Hierarchies below
 - `postload` - post-install configuration inheritance hierarchy, see Inheritance Hierarchies below
 - `loader` - function to use to convert the config files to objects
@@ -178,14 +178,15 @@ Options:
 * `env` - name of config section to load, as can also be passed to `load()`.
   If not specified in options looks for the NODE_ENV environment variable,
   or uses the default `development`.
-* `dirName` - relative directory name holding the config files (default `config`)
-* `configDirectory` - absolute directory name holding the config files (no default).
+* `dirName` - relative directory name holding the config files (default `config`).
+  Also recognized as `dirname`.
+* `dir` - absolute directory name holding the config files (no default).
   If not specified in options looks for the `NODE_CONFIG_DIR` environment variable,
-  or searches up along the directory path of the calling file.  `dir` is accepted
-  as an alias for configDirectory.
+  or searches up along the directory path of the calling file.  `configDirectory`
+  is accepted as an alias for `dir`.
 * `preload` - the inherits-from list of environments.  The default inheritance rules are
   `{ default: [], development: ['default'], staging: ['default'], production: ['default'],
-  canary: ['production'], custom: ['production'] }`.
+  canary: ['production'], custom: ['production'] }`.  Also recognized as `layers`.
   Passed in layers are merged into the defaults; to delete a layer set it to falsy.
 * `postload` - the overridden-with list of environments.  The default is none, `[]`.
 * `loader` - function to read and parse the config file (default `require()`)

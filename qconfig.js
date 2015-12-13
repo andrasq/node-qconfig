@@ -1,7 +1,7 @@
 /**
  * quick little configuration loader
  * Loads the configuration named by the NODE_ENV environment variable,
- * with support for inherited settings from other configurations.
+ * with support for inherited and override settings from other configurations.
  *
  * Copyright (C) 2015 Andras Radics
  * Licensed under the Apache License, Version 2.0
@@ -19,8 +19,8 @@ function QConfig( opts ) {
     this.opts = {
         env: opts.env || process.env.NODE_ENV || 'development',
         caller: opts.caller || QConfig.getCallingFile(new Error().stack),
-        dirName: opts.dirName || opts.dirname || 'config',
-        configDirectory: opts.configDirectory || opts.dir || process.env.NODE_CONFIG_DIR || null,
+        dirName: opts.dirname || opts.dirName || 'config',
+        configDirectory: opts.dir || opts.configDirectory || process.env.NODE_CONFIG_DIR || null,
         loader: opts.loader || require,
         extensions: opts.extensions || ['.js', '.json', '.coffee'],     // extensions to try, in order
     }
