@@ -239,6 +239,11 @@ not configured, returns an empty config `{ }`.
 ChangeLog
 ---------
 
+1.6.0
+
+* support coffee-script sources
+* when loaded from the command line, look for configs relative to $cwd
+
 1.5.0
 
 * accept an optional `env` parameter to `qconfig/load`

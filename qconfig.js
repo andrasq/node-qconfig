@@ -174,34 +174,39 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     var myFilename = new RegExp("/" + path.basename(filename) + ":[0-9]+:[0-9]+[)]$")
     var qconfigFilename = new RegExp("/qconfig/")
     var qconfigTestfile = new RegExp("/qconfig/test/")
+    var moduleJsFilename = new RegExp("module.js:")
+    var coffeeScriptFilename = new RegExp("/coffee-script/")
     var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")      // (module.js:1:2)
     var sourceFilename = new RegExp("[(]\/[^:]*:[0-9]+:[0-9]+[)]$")     // (/path/file.js:1:2)
     stack = stack.split('\n')
 
-    // find just the js files with absolute filepaths, skip [eval] and built-in sources
     var line, sourceLines = []
-    while ((line = stack.shift())) {
-        if (sourceFilename.test(line)) sourceLines.push(line)
-    }
-    stack = sourceLines
 
     // find the first line in the backtrace that called qconfig
+    // scans up past qconfig and nodejs/module.js to the file that called require
     var prevLine = stack.shift()
     while (
         stack.length && (
-            myFilename.test(stack[0]) ||
             qconfigFilename.test(stack[0]) && !qconfigTestfile.test(stack[0]) && stack.length > 1 ||
+            moduleJsFilename.test(stack[0]) ||
+            coffeeScriptFilename.test(stack[0]) ||
+            myFilename.test(stack[0]) ||
             builtinFilename.test(stack[0])
         ))
     {
         prevLine = stack.shift()
     }
 
-    // over-deep stack will not include all lines
-    line = stack.length ? stack[0] : ''
+    // find just the js files with absolute filepaths, skip [eval] and built-in sources
+    while ((line = stack.shift())) {
+        if (sourceFilename.test(line)) sourceLines.push(line)
+    }
 
-    // if loading from the command line, the first file is the caller
-    if (!line) line = prevLine
+    // over-deep stack will not include all lines
+    line = sourceLines.length ? sourceLines[0] : ''
+
+    // if loaded directly from the command line, use $cwd as the calling file directory
+    if (!line) return process.cwd() + '/[eval].js'
 
     var mm
     if ((mm = line.match(/ at \(((.*):([0-9]+):([0-9]+))\)$/)) || (mm = line.match(/ at .+ \(((.*):([0-9]+):([0-9]+))\)$/))) {

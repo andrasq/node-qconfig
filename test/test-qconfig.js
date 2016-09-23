@@ -115,10 +115,12 @@ module.exports = {
             },
 
             '_installLayers should build regexes from regex strings': function(t) {
-                var qconf = new qconfig.QConfig({ layers: {'/te\/s*t/i': ['a', 'b']} })
+                var qconf = new qconfig.QConfig({ layers: {'/te/s*t/i': ['a', 'b']} })
                 var last = qconf.preload.pop()
                 t.ok(last[0] instanceof RegExp)
-                t.equal(last[0].toString(), '/te\/s*t/i')
+                // note: RegExp.toString() changed between v0.10 and v4.4, it now
+                // backslash-escapes / in the string output, a breaking change
+                t.ok(last[0].toString() == '/te/s*t/i' || last[0].toString() == '/te\\/s*t/i')
                 t.deepEqual(last[1], ['a', 'b'])
                 t.done()
             },
