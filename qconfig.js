@@ -151,7 +151,10 @@ QConfig.prototype = {
         _depth = _depth || 0
         if (_depth > 100) throw new Error("runaway merge recursion")
         for (var k in layer) {
-            if (this._isHash(base[k]) && this._isHash(layer[k])) this.merge(base[k], layer[k], _depth+1)
+            if (this._isHash(layer[k])) {
+                if (!this._isHash(base[k])) base[k] = {};
+                this.merge(base[k], layer[k], _depth+1)
+            }
             else base[k] = layer[k]
         }
         return base

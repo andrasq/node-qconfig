@@ -210,6 +210,15 @@ module.exports = {
             t.done()
         },
 
+        'merge should never use the source object directly': function(t) {
+            var source = { a: { b: { c: 123 } } };
+            var target = {};
+            var merged = this.qconf.merge(target, source);
+            t.deepEqual(merged.a, source.a);
+            t.ok(merged.a != source.a);
+            t.done();
+        },
+
         'should locate config dir closest to calling file walking up filepath': function(t) {
             var config = require('./nested/deeper/load.js')
             t.equal(config.default, 'nested')
