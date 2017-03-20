@@ -239,6 +239,10 @@ not configured, returns an empty config `{ }`.
 ChangeLog
 ---------
 
+1.6.1
+
+* never reuse any part of a layer, always copy it recursively into the target
+
 1.6.0
 
 * support coffee-script sources
