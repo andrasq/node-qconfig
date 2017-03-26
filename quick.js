@@ -67,6 +67,8 @@ function _locateConfigDirectory( basepath, dirName ) {
 
 function _loadConfigFile( filename, primary ) {
     try {
+        // faster to just require than to first probe for the supported extensions
+        // var extensions = ['.js', '.json', '', '.coffee'];
         return require(filename);
     }
     catch (err) {

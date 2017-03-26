@@ -107,7 +107,7 @@ QConfig.prototype = {
     _findLayers: function _findLayers( layers, env ) {
         // linear search newest to oldest, newest matching entry wins
         for (var i=layers.length-1; i>=0; i--) {
-            // TODO: if (layers[i][0] == env || layers[i][0].test && layers[i][0].test(env)) return layres[i][1]
+            // TODO: if (layers[i][0] == env || layers[i][0].test && layers[i][0].test(env)) return layers[i][1]
             if (typeof layers[i][0] === 'string') {
                 if (layers[i][0] === env) return layers[i][1]
             }
