@@ -1,6 +1,6 @@
 {
   "name": "qconfig",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "small, light configuration loader",
   "main": "index.js",
   "author": "Andras",

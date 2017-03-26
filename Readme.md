@@ -239,6 +239,9 @@ not configured, returns an empty config `{ }`.
 ChangeLog
 ---------
 
+1.6.3
+* fix loading from a nested subdirectory listed without surrounding parentheses
+
 1.6.2
 * optimizations, now 70% faster
 

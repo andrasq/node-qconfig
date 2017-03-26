@@ -180,7 +180,7 @@ var qconfigTestfile = new RegExp("/qconfig/test/")
 var moduleJsFilename = new RegExp("module.js:")
 var coffeeScriptFilename = new RegExp("/coffee-script/")
 var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")      // (module.js:1:2)
-var sourceFilename = new RegExp("[(]\/[^:]*:[0-9]+:[0-9]+[)]$")     // (/path/file.js:1:2)
+var sourceFilename = new RegExp("[(]?\/[^:]*:[0-9]+:[0-9]+[)]?$")   // (/path/file.js:1:2) || /path/file.js:1:2
 var evalFilename = /at \[eval\]:[1-9]/
 
 QConfig.getCallingFile = function getCallingFile( stack, filename ) {
@@ -223,11 +223,15 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     // if loaded directly from the command line, use $cwd as the calling file directory
     if (!line) return process.cwd() + '/[eval].js'
 
-    var mm
-    if ((mm = line.match(/ at \(((.*):([0-9]+):([0-9]+))\)$/)) || (mm = line.match(/ at .+ \(((.*):([0-9]+):([0-9]+))\)$/))) {
-        // mm[2] is filename, mm[3] is line num, mm[4] is column
-        return mm[2]
-    }
+    // recognize:
+    //   at (/path/file.js:2:3)
+    //   at module (/path/file.js:2:3)
+    //   at /path/file.js:2:3
+    var mm = line.match(/ at.* [(]?((.*):([0-9]+):([0-9]+))[)]?$/)
+    // mm[2] is filename, mm[3] is line num, mm[4] is column
+    if (mm) return mm[2]
+
+    // TODO: calling file found, now what?
     return ''
 }
 
