@@ -18,6 +18,7 @@ function QConfig( opts ) {
     opts = opts || {}
     this.opts = {
         env: opts.env || process.env.NODE_ENV || 'development',
+        // TODO: caller is only needed for configDirectory, only compute if directory is not given
         caller: opts.caller || QConfig.getCallingFile(new Error().stack),
         dirname: opts.dirname || opts.dirName || 'config',
         configDirectory: opts.dir || opts.configDirectory || process.env.NODE_CONFIG_DIR || null,
@@ -56,14 +57,14 @@ QConfig.prototype = {
         var env = env || this.opts.env
         var configDirectory = configDirectory || this.opts.configDirectory
         if (!configDirectory || !this._isDirectory(configDirectory)) return {notConfigured: true}      // no config directory
-        var calledFrom = QConfig.getCallingFile(new Error().stack)
 
         this._depth += 1
         if (this._depth > 100) throw new Error("runaway layer recursion")
-        var config = {}, layers
+
+        var config = {}
 
         // install the preload layers
-        layers = this._findLayers(this.preload, env)
+        var layers = this._findLayers(this.preload, env)
         if (layers) for (var i=0; i<layers.length; i++) {
             this.merge(config, this.load(layers[i]), configDirectory, true)
         }
@@ -142,8 +143,9 @@ QConfig.prototype = {
         else return loader
     },
 
-    _isHash: function _isHash( a ) {
-        return (a) && Object.prototype.toString.call(a) === '[object Object]'
+    _isHash: function _isHash( o ) {
+        // a hash object is not instanceof any class
+        return o && typeof o === 'object' && o.constructor && o.constructor.name === 'Object';
     },
 
     // recursively merge layer into base, overriding existing in base
@@ -152,7 +154,8 @@ QConfig.prototype = {
         if (_depth > 100) throw new Error("runaway merge recursion")
         for (var k in layer) {
             if (this._isHash(layer[k])) {
-                if (!this._isHash(base[k])) base[k] = {};
+                // always copy hashes, never assign directly
+                if (!this._isHash(base[k])) base[k] = {}
                 this.merge(base[k], layer[k], _depth+1)
             }
             else base[k] = layer[k]
@@ -172,21 +175,25 @@ QConfig.prototype = {
     },
 }
 
+var qconfigFilename = new RegExp("/qconfig/")
+var qconfigTestfile = new RegExp("/qconfig/test/")
+var moduleJsFilename = new RegExp("module.js:")
+var coffeeScriptFilename = new RegExp("/coffee-script/")
+var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")      // (module.js:1:2)
+var sourceFilename = new RegExp("[(]\/[^:]*:[0-9]+:[0-9]+[)]$")     // (/path/file.js:1:2)
+var evalFilename = /at \[eval\]:[1-9]/
+
 QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     filename = filename || __filename
     var myFilename = new RegExp("/" + path.basename(filename) + ":[0-9]+:[0-9]+[)]$")
-    var qconfigFilename = new RegExp("/qconfig/")
-    var qconfigTestfile = new RegExp("/qconfig/test/")
-    var moduleJsFilename = new RegExp("module.js:")
-    var coffeeScriptFilename = new RegExp("/coffee-script/")
-    var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")      // (module.js:1:2)
-    var sourceFilename = new RegExp("[(]\/[^:]*:[0-9]+:[0-9]+[)]$")     // (/path/file.js:1:2)
     stack = stack.split('\n')
 
     var line, sourceLines = []
 
     // find the first line in the backtrace that called qconfig
-    // scans up past qconfig and nodejs/module.js to the file that called require
+    // this is usually the line "Module.require (module.js:.*)"
+    // consumes the calling lines until
+    // scans up past qconfig and nodejs/module.js to the line that called require
     var prevLine = stack.shift()
     while (
         stack.length && (
@@ -200,13 +207,18 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
         prevLine = stack.shift()
     }
 
+    // if loaded manually from the command line, use $cwd as the calling file directory
+    if (evalFilename.test(stack[0])) return process.cwd() + '/[eval].js'
+
+    // else skip
     // find just the js files with absolute filepaths, skip [eval] and built-in sources
+    // FIXME: umm... [eval] means it was called from the command line, no?  should stop then
+    // qtimeit has [eval] twice, so it works.  But require("qconfig") should use $cwd, and it breaks
     while ((line = stack.shift())) {
-        if (sourceFilename.test(line)) sourceLines.push(line)
+        if (sourceFilename.test(line)) break
     }
 
-    // over-deep stack will not include all lines
-    line = sourceLines.length ? sourceLines[0] : ''
+    // TODO: over-deep stack will not include all lines, throw or default?
 
     // if loaded directly from the command line, use $cwd as the calling file directory
     if (!line) return process.cwd() + '/[eval].js'
