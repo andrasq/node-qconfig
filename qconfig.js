@@ -16,6 +16,7 @@ var path = require('path')
 
 function QConfig( opts ) {
     opts = opts || {}
+    // built-in options
     this.opts = {
         env: opts.env || process.env.NODE_ENV || 'development',
         // TODO: caller is only needed for configDirectory, only compute if directory is not given
@@ -27,8 +28,11 @@ function QConfig( opts ) {
     }
     this.opts.configDirectory = this.opts.configDirectory || this._locateConfigDirectory(this.opts.caller, this.opts.dirname)
 
+    // qconfig.conf overrides builtins
     var qconf = this._loadConfigFile('qconfig.conf', this.opts.configDirectory, true)
     this.opts = this.merge(this.opts, qconf)
+
+    // user options override qconfig.conf
     this.opts = this.merge(this.opts, opts)
 
     this.preload = this._installLayers([], {
@@ -44,11 +48,9 @@ function QConfig( opts ) {
         default: [],    // clear dependency list for 'default' and 'local'
         local: [],
     })
-    if (this.opts.layers) this._installLayers(this.preload, this.opts.layers)
-    if (this.opts.preload) this._installLayers(this.preload, this.opts.preload)
-    if (this.opts.postload) this._installLayers(this.postload, this.opts.postload)
-
-    this.opts.loader = this._normalizeLoader(this.opts.loader, this.opts.extensions)
+    this.preload = this._installLayers(this.preload, this.opts.layers)
+    this.preload = this._installLayers(this.preload, this.opts.preload)
+    this.postload = this._installLayers(this.postload, this.opts.postload)
 }
 
 QConfig.prototype = {
@@ -112,7 +114,8 @@ QConfig.prototype = {
     _findLayers: function _findLayers( layers, env ) {
         // linear search newest to oldest, newest matching entry wins
         for (var i=layers.length-1; i>=0; i--) {
-            // TODO: if (layers[i][0] == env || layers[i][0].test && layers[i][0].test(env)) return layers[i][1]
+            // TODO:
+            // if (layers[i][0] == env || layers[i][0].test && layers[i][0].test(env)) return layers[i][1]
             if (typeof layers[i][0] === 'string') {
                 if (layers[i][0] === env) return layers[i][1]
             }
@@ -125,27 +128,31 @@ QConfig.prototype = {
 
     _loadConfigFile: function _loadConfigFile( env, configDirectory, _silenced ) {
         var file = configDirectory + "/" + env
-        var filename, loader = this.opts.loader
+        var filename, loader = this.opts.loader || require
+
+        // use loader function to load the file directly
+        if (typeof loader === 'function') {
+            try { return loader(file) }
+            catch (err) {
+                for (var i=0; i<this.opts.extensions.length; i++) {
+                    try { return loader(file + this.opts.extensions[i]) }
+                    catch (e) { }
+                }
+                if (!_silenced && err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err
+            }
+            // warn if the requested environment is not configured
+            if (!_silenced) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
+            return {}
+        }
+
+        // use loader mappings to load the environment by extension
         for (var ext in loader) {
             filename = file + ext
             try { return fs.statSync(filename) && loader[ext](filename) }
             catch (err) { if (err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err }
         }
-        // if the user-supplied loader does not succeed, fall back to the built-in require()
-        try { return require(file) } catch (e) { return {} }
-        // warn if the requested environment is not configured
         if (!_silenced) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
-    },
-
-    _normalizeLoader: function _normalizeLoader( loader, extensions ) {
-        if (typeof this.opts.loader === 'function') {
-            if (!Array.isArray(extensions)) extensions = []
-            if (!extensions.length) exts.push('')
-            var extensionLoader = {}
-            for (var i in extensions) extensionLoader[extensions[i]] = loader
-            return extensionLoader
-        }
-        else return loader
+        return {}
     },
 
     _isHash: function _isHash( o ) {
@@ -183,9 +190,10 @@ QConfig.prototype = {
 var qconfigFilename = new RegExp("/qconfig/")
 var qconfigTestfile = new RegExp("/qconfig/test/")
 var moduleJsFilename = new RegExp("module.js:")
-var coffeeScriptFilename = new RegExp("/coffee-script|coffeescript/")
-var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")      // (module.js:1:2)
-var sourceFilename = new RegExp("[(]?\/[^:]*:[0-9]+:[0-9]+[)]?$")   // (/path/file.js:1:2) || /path/file.js:1:2
+var coffeeScriptFilename = new RegExp("/coffee-script/|/coffeescript/")
+// source filenames are absolute, anchored at '/'; built-in sources at a plain filename
+var builtinFilename = new RegExp(" [(][^/]*:[0-9]+:[0-9]+[)]$")  // (module.js:1:2)
+var sourceFilename = new RegExp(" [(]?(/.*):[0-9]+:[0-9]+[)]?$") // (/path/file.js:1:2) || /path/file.js:1:2
 var evalFilename = /at \[eval\]:[1-9]/
 
 QConfig.getCallingFile = function getCallingFile( stack, filename ) {
@@ -215,29 +223,18 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
     // if loaded manually from the command line, use $cwd as the calling file directory
     if (evalFilename.test(stack[0])) return process.cwd() + '/[eval].js'
 
-    // else skip
-    // find just the js files with absolute filepaths, skip [eval] and built-in sources
-    // FIXME: umm... [eval] means it was called from the command line, no?  should stop then
-    // qtimeit has [eval] twice, so it works.  But require("qconfig") should use $cwd, and it breaks
+    // else skip the nodejs builtins and find the user sources  
+    // TODO: over-deep stack will not include all lines, throw or default?
     while ((line = stack.shift())) {
         if (sourceFilename.test(line)) break
     }
 
-    // TODO: over-deep stack will not include all lines, throw or default?
-
-    // if loaded directly from the command line, use $cwd as the calling file directory
+    // if no user sources, assume running from the command line, use $cwd as the calling file directory
     if (!line) return process.cwd() + '/[eval].js'
 
-    // recognize:
-    //   at (/path/file.js:2:3)
-    //   at module (/path/file.js:2:3)
-    //   at /path/file.js:2:3
-    var mm = line.match(/ at.* [(]?((.*):([0-9]+):([0-9]+))[)]?$/)
-    // mm[2] is filename, mm[3] is line num, mm[4] is column
-    if (mm) return mm[2]
-
-    // TODO: calling file found, now what?
-    return ''
+    // else line matches the sourceFilename pattern, extract the filename
+    var match = line.match(sourceFilename)
+    return match[1]
 }
 
 module.exports = QConfig

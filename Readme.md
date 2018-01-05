@@ -69,8 +69,7 @@ is loadable by `require()`, typically `.js`, `.json` and `.coffee`.
 - `dir` - config directory filepath (default is to search on calling file filepath)
 - `preload` - pre-install configuration inheritance hierarchy, see Inheritance Hierarchies below
 - `postload` - post-install configuration inheritance hierarchy, see Inheritance Hierarchies below
-- `loader` - function to use to convert the config files to objects
-  (default `require`)
+- `loader` - function to use to convert the config files to objects (default `require`)
 - `extensions` - config filename extensions to look for, see Configuration File
   Formats below (default `['', '.js', '.json']`)
 
@@ -93,8 +92,10 @@ config sections as overrides.  These are configured in the `preload` and `postlo
 sections of `qconfig.conf`, or via the `preload` and `postload` properties of the
 constructor options.
 
-As of version 1.7.0, environments with no inheritance hierarchy specified preload
-'default' and postload 'local' for more convenient `config` compatibility.
+As of version 1.7.0, environments without a specified inheritance hierarchy preload
+'default' and postload 'local' for more convenient `config` compatibility.  If a
+hierarchy is specified explicitly, those and only those layers will be loaded,
+without built-in defaults.
 
 ### Configation File Formats
 
@@ -246,6 +247,12 @@ ChangeLog
 * if no hierarchy specified, preload `default` and postload `local`
 * fix pre-, postload layer merging
 * test with qnit 0.19.0
+* fix env-not-configured warning
+* fix caller-passed preload/postload layer merging
+* do not fall back to built-in loader if caller specified a loader to use
+* fix caller-provided layer merging
+* clean up and simplify _loadConfigFile()
+* clean up and simplify getCallingFile()
 
 1.6.3
 * fix loading from a nested subdirectory listed without surrounding parentheses

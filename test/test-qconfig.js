@@ -102,18 +102,20 @@ module.exports = {
 
             'should apply qconfig.conf found in config dir': function(t) {
                 var qconf = new qconfig.QConfig({ dirName: 'config3' })
-                var config = qconf.load('preconfigured')
+                var config = qconf.load('preconfigured', null, true)
                 t.equal(config.canary, 'config3')
                 t.done();
             },
 
             'caller-specified layers should override qconfig.conf': function(t) {
                 var qconf = new qconfig.QConfig({ dirName: 'config3', layers: {preconfigured: ['other3']} })
-                var config = qconf.load('preconfigured')
+                var config = qconf.load('preconfigured', null, true)
                 t.equal(config.name, 'other3')
                 t.done();
             },
+        },
 
+        '_installLayers': {
             '_installLayers should build regexes from regex strings': function(t) {
                 var qconf = new qconfig.QConfig({ layers: {'/te/s*t/i': ['a', 'b']} })
                 var last = qconf.preload.pop()
@@ -131,6 +133,52 @@ module.exports = {
                 t.equal(last[0].toString(), '/te\\/s*t/i')
                 t.deepEqual(last[1], ['a', 'b'])
                 t.done()
+            },
+
+            '_installLayers should only install layers with string or regex names': function(t) {
+                var patt = /test2/
+                var layers = this.qconf._installLayers([], [ [1, 2, 3], ['test', 2, 3], [patt, 2, 3] ])
+                t.deepEqual(layers, [ ['test', 2, 3], [patt, 2, 3] ])
+                t.done()
+            },
+
+            '_installLayers should install a layer name': function(t) {
+                var layers = this.qconf._installLayers([], { test4: 'test3', test5: 'test3' });
+                t.deepEqual(layers, [ ['test4', ['test3']], ['test5', ['test3']] ]);
+                t.done();
+            },
+        },
+
+        '_loadConfigFile': {
+            'should suppress file-not-found error': function(t) {
+                this.qconf._loadConfigFile('nonesuch', '/', true);
+                t.done();
+            },
+
+            'should use a default loader': function(t) {
+                var qconf = new qconfig.QConfig({ loader: null });
+                var conf = qconf._loadConfigFile('canary', __dirname + '/config');
+                t.strictEqual(conf.canary, true);
+                t.done();
+            },
+
+            'should use a mapped loader': function(t) {
+                var qconf = new qconfig.QConfig({ loader: { '': require } });
+                var conf = qconf._loadConfigFile('canary.js', __dirname + '/config');
+                t.strictEqual(conf.canary, true);
+                t.done();
+            },
+
+            'should throw if function loader can not read file': function(t) {
+                var qconf = new qconfig.QConfig({ loader: require });
+                t.throws(function(){ qconf._loadConfigFile('sudoers', '/etc') }, /EACCES/);
+                t.done();
+            },
+
+            'should throw if mapped loader can not read file': function(t) {
+                var qconf = new qconfig.QConfig({ loader: { '': require } });
+                t.throws(function(){ qconf._loadConfigFile('sudoers', '/etc') }, /EACCES/);
+                t.done();
             },
         },
 
@@ -155,14 +203,27 @@ module.exports = {
 
             'should use defined layers': function(t) {
                 var qconf = new qconfig.QConfig({ layers: {target: ['canary']} })
-                var config = qconf.load("target")
+                var config = qconf.load("target", null, true)
                 t.equal(config.canary, true)
                 t.done()
             },
 
+            'should load default by default': function(t) {
+                var config = this.qconf.load("target", null, true)
+                t.strictEqual(config.default, true)
+                t.done()
+            },
+
+            'should not load default by default if explicit layering is given': function(t) {
+                var qconf = new qconfig.QConfig({ layers: { target: [] } })
+                var config = qconf.load("target", null, true)
+                t.strictEqual(config.default, undefined)
+                t.done();
+            },
+
             'should use defined layer regex string': function(t) {
                 var qconf = new qconfig.QConfig({ layers: {'/-override$/': ['canary', 'development']} })
-                var config = qconf.load("canary-override")
+                var config = qconf.load("canary-override", null, true)
                 t.equal(config.canary, true)
                 t.equal(config.production, true)
                 t.equal(config.development, true)
@@ -211,7 +272,7 @@ module.exports = {
             },
 
             'should load a non-existent configuration': function(t) {
-                var config = this.qconf.load('notexist')
+                var config = this.qconf.load('notexist', null, true)
                 t.done()
             },
         },
@@ -231,6 +292,16 @@ module.exports = {
             t.done();
         },
 
+        'merge should detect self-recursion': function(t) {
+            var qconf = this.qconf;
+            var a = {}, b = {a: a};
+            a.b = b;
+            t.throws(function() {
+                qconf.merge({}, a);
+            }, /recursion/)
+            t.done();
+        },
+
         'should locate config dir closest to calling file walking up filepath': function(t) {
             var config = require('./nested/deeper/load.js')
             t.equal(config.default, 'nested')
@@ -242,6 +313,27 @@ module.exports = {
             t.equal(config.canary, true)
             t.equal(config.production, true)
             t.done()
+        },
+
+        'getCallingFile': {
+            'should return $cwd for eval': function(t) {
+                var stack = "Error:\n" +
+                    "  at (node_module:1:1)\n" +
+                    "  at /module/path/qconfig/qconfig.js:1:1\n" +
+                    "  at [eval]:1:1"
+                t.contains(QConfig.getCallingFile(stack, 'index.js'), process.cwd())
+                t.done()
+            },
+
+            'should return $cwd if no user source found': function(t) {
+                var stack = "Error:\n" +
+                    "  at (node_module:1:1)\n" +
+                    "  at /module/path/qconfig/qconfig.js:1:1\n" +
+                    "  at /module/path/coffee-script/loader:1:1\n" +
+                    "  at unrecognized backtrace syntax\n"
+                t.contains(QConfig.getCallingFile(stack, 'index.js'), process.cwd())
+                t.done()
+            },
         },
     },
 }
