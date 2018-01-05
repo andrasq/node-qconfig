@@ -141,7 +141,7 @@ QConfig.prototype = {
                 if (!_silenced && err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err
             }
             // warn if the requested environment is not configured
-            if (!_silenced) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
+            QConfig.maybeWarn(!_silenced, "qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
             return {}
         }
 
@@ -151,7 +151,7 @@ QConfig.prototype = {
             try { return fs.statSync(filename) && loader[ext](filename) }
             catch (err) { if (err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err }
         }
-        if (!_silenced) console.log("qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
+        QConfig.maybeWarn(!_silenced, "qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
         return {}
     },
 
@@ -176,7 +176,7 @@ QConfig.prototype = {
     },
 
     _locateConfigDirectory: function _locateConfigDirectory( basepath, dirName ) {
-        var pathname = (basepath || ".") + '/' + dirName
+        var pathname = basepath + '/' + dirName
         if (this._isDirectory(pathname)) return pathname
         else return (basepath.indexOf('/') >= 0 && basepath !== '/') ? this._locateConfigDirectory(path.dirname(basepath), dirName) : null
     },
@@ -185,6 +185,14 @@ QConfig.prototype = {
         try { return fs.statSync(dirname).isDirectory() }
         catch (err) { return false }
     },
+}
+
+QConfig.maybeWarn = function maybeWarn( verbose, format ) {
+    if (verbose) {
+        var argv = new Array()
+        for (var i=1; i<arguments.length; i++) argv.push(arguments[i])
+        console.log.apply(null, arguments)
+    }
 }
 
 var qconfigFilename = new RegExp("/qconfig/")

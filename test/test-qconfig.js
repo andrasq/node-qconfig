@@ -335,5 +335,21 @@ module.exports = {
                 t.done()
             },
         },
+
+        'maybeWarn': {
+            'should console.log if verbose': function(t) {
+                var spy = t.stubOnce(console, 'log', function(){})
+                QConfig.maybeWarn(true, "test")
+                t.equal(spy.callCount, 1)
+                t.done()
+            },
+
+            'should suppress output if not verbose': function(t) {
+                var spy = t.stubOnce(console, 'log', function(){})
+                QConfig.maybeWarn(false, "test")
+                t.equal(spy.callCount, 0)
+                t.done()
+            }
+        },
     },
 }
