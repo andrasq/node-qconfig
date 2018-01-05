@@ -1,5 +1,7 @@
 QConfig
 =======
+[![Build Status](https://api.travis-ci.org/andrasq/node-qconfig.svg?branch=master)](https://travis-ci.org/andrasq/node-qconfig?branch=master)
+[![Coverage Status](https://codecov.io/github/andrasq/node-qconfig/coverage.svg?branch=master)](https://codecov.io/github/andrasq/node-qconfig?branch=master)
 
 Small, light configuration loader.  Loads json and javascript config files (also
 coffee-script).  Configuration can be hierarchical, inheriting from multiple sources
