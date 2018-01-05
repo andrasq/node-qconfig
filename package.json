@@ -1,27 +1,23 @@
 {
   "name": "qconfig",
-  "version": "1.6.3",
+  "version": "1.7.0",
   "description": "small, light configuration loader",
   "main": "index.js",
   "author": "Andras",
   "license": "Apache 2.0",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/andrasq/node-qconfig"
-  },
+  "repository": "https://github.com/andrasq/node-qconfig",
   "keywords": [
     "configuration", "conf", "config", "small", "fast", "easy", "simple", "node-config", "config-node"
   ],
-  "scripts": {
-    "test": "qnit test/test-*"
-  },
-  "bugs": {
-    "url": "https://github.com/andrasq/node-qrpc/issues"
-  },
-  "homepage": "https://github.com/andrasq/node-qconfig",
+
   "dependencies": {
   },
   "devDependencies": {
-    "qnit": "*"
+    "qnit": "0.19.0"
+  },
+  "scripts": {
+    "test": "qnit test/test-*",
+    "coverage": "nyc --reporter lcov --reporter text npm test",
+    "clean": "rm -rf .nyc_output coverage"
   }
 }

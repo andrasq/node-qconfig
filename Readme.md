@@ -93,6 +93,9 @@ config sections as overrides.  These are configured in the `preload` and `postlo
 sections of `qconfig.conf`, or via the `preload` and `postload` properties of the
 constructor options.
 
+As of version 1.7.0, environments with no inheritance hierarchy specified preload
+'default' and postload 'local' for more convenient `config` compatibility.
+
 ### Configation File Formats
 
 ### Config compatibility
@@ -238,6 +241,11 @@ not configured, returns an empty config `{ }`.
 
 ChangeLog
 ---------
+
+1.7.0
+* if no hierarchy specified, preload `default` and postload `local`
+* fix pre-, postload layer merging
+* test with qnit 0.19.0
 
 1.6.3
 * fix loading from a nested subdirectory listed without surrounding parentheses

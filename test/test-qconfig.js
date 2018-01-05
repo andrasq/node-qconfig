@@ -193,8 +193,20 @@ module.exports = {
             },
 
             'should be available as qconfig/load': function(t) {
-                var config = (require('../load'))({env: 'canary'})
+                var config = (require('../load'))('canary', {})
                 t.equal(config.canary, true)
+                t.done()
+            },
+
+            'qconfig/load should accept just options': function(t) {
+                var config = (require('../load'))({ env: 'canary' });
+                t.equal(config.canary, true)
+                t.done()
+            },
+
+            'qconfig/load should load development by default': function(t) {
+                var config = (require('../load'))();
+                t.equal(config.development, true)
                 t.done()
             },
 

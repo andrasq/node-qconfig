@@ -32,14 +32,18 @@ function QConfig( opts ) {
     this.opts = this.merge(this.opts, opts)
 
     this.preload = this._installLayers([], {
-        default: [],
+        default: [],    // clear dependency list for 'default' and 'local'
+        local: [],
         development: ['default'],
         staging: ['default'],
         production: ['default'],
         canary: ['production'],
         custom: ['production'],
     })
-    this.postload = []
+    this.postload = this._installLayers([], {
+        default: [],    // clear dependency list for 'default' and 'local'
+        local: [],
+    })
     if (this.opts.layers) this._installLayers(this.preload, this.opts.layers)
     if (this.opts.preload) this._installLayers(this.preload, this.opts.preload)
     if (this.opts.postload) this._installLayers(this.postload, this.opts.postload)
@@ -64,17 +68,18 @@ QConfig.prototype = {
         var config = {}
 
         // install the preload layers
-        var layers = this._findLayers(this.preload, env)
-        if (layers) for (var i=0; i<layers.length; i++) {
-            this.merge(config, this.load(layers[i]), configDirectory, true)
+        var layers = this._findLayers(this.preload, env) || ['default']
+        for (var i=0; i<layers.length; i++) {
+            this.merge(config, this.load(layers[i], configDirectory, true))
         }
 
+        // install the env
         this.merge(config, this._loadConfigFile(env, configDirectory, _nested))
 
         // install the postload layers
-        layers = this._findLayers(this.postload, env)
-        if (layers) for (var i=0; i<layers.length; i++) {
-            this.merge(config, this.load(layers[i]), configDirectory, true)
+        layers = this._findLayers(this.postload, env) || ['local']
+        for (var i=0; i<layers.length; i++) {
+            this.merge(config, this.load(layers[i], configDirectory, true))
         }
 
         this._depth -= 1
@@ -178,7 +183,7 @@ QConfig.prototype = {
 var qconfigFilename = new RegExp("/qconfig/")
 var qconfigTestfile = new RegExp("/qconfig/test/")
 var moduleJsFilename = new RegExp("module.js:")
-var coffeeScriptFilename = new RegExp("/coffee-script/")
+var coffeeScriptFilename = new RegExp("/coffee-script|coffeescript/")
 var builtinFilename = new RegExp("[(][^/]*:[0-9]+:[0-9]+[)]$")      // (module.js:1:2)
 var sourceFilename = new RegExp("[(]?\/[^:]*:[0-9]+:[0-9]+[)]?$")   // (/path/file.js:1:2) || /path/file.js:1:2
 var evalFilename = /at \[eval\]:[1-9]/
