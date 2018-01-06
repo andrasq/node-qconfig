@@ -70,6 +70,7 @@ is loadable by `require()`, typically `.js`, `.json` and `.coffee`.
 - `dirname` - config directory name (default `config`)
 - `dir` - config directory filepath (default is to search on calling file filepath)
 - `preload` - pre-install configuration inheritance hierarchy, see Inheritance Hierarchies below
+- `layers` - synonym for `preload`
 - `postload` - post-install configuration inheritance hierarchy, see Inheritance Hierarchies below
 - `loader` - function to use to convert the config files to objects (default `require`)
 - `extensions` - config filename extensions to look for, see Configuration File
@@ -94,10 +95,25 @@ config sections as overrides.  These are configured in the `preload` and `postlo
 sections of `qconfig.conf`, or via the `preload` and `postload` properties of the
 constructor options.
 
+As of version 1.7.0, all environments implicitly preload `default` and postload `local`.
+This behavior does not apply to environments that explicitly specify their own preload
+or postload dependencies.  To turn off auto-loading `default`, define an empty preload
+list.  To turn off auto-loading `local`, define an empty postload list.
+
+    // configure environment `bare` to not load `default` or `local`
+    var load = require('qconfig/load')
+    var config = load('bare', { preload: { bare: [] }, postload: { bare: [] } })
+
 As of version 1.7.0, environments without a specified inheritance hierarchy preload
-'default' and postload 'local' for more convenient `config` compatibility.  If a
+`default` and postload `local` for more convenient `config` compatibility.  If a
 hierarchy is specified explicitly, those and only those layers will be loaded,
 without built-in defaults.
+
+If a top-level environment is not configured, it elicits a warning message.
+If a dependency is not configured, it is silently ignored.
+
+The base set of environments are `development`, `staging`, `production` and `canary`.
+Each preloads `default` and postloads `lovcal`.  `canary` also preloads `production`.
 
 ### Configation File Formats
 
@@ -212,13 +228,19 @@ Options:
   If not specified in options looks for the `NODE_CONFIG_DIR` environment variable,
   or searches up along the directory path of the calling file.  `configDirectory`
   is accepted as an alias for `dir`.
-* `preload` - the inherits-from list of environments.  The default inheritance rules are
-  `{ default: [], development: ['default'], staging: ['default'], production: ['default'],
-  canary: ['production'], custom: ['production'] }`.  Also recognized as `layers`.
-  Passed in layers are merged into the defaults; to delete a layer define it as falsy.
+* `preload` - the inherits-from list of environments as a mapping of environment names to
+  list of dependency config sections.  Also recognized as `layers`.  By default everything
+  preloads `default` unless its preload is explicitly configured.  The `canary` environment
+  depends on `production`; `development`, `staging` and `production` use the 1.7.0 layering
+  rules to inherit from `default` and `local`.  To delete a layer define it as falsy.
+  Starting with version 1.7.0 the default preload layer for unconfigured environments is
+  `default`.  Environments that specify their own inheritance hierarchy must explicitly list
+  all preload environments they inherit from (`default`) or postload are overridden with
+  (`local`).
 * `postload` - the overridden-with list of environments.  Postload is an object mapping
-  environment names to override configuration sections, e.g. `{production: ['local']}`.
-  The default is none, `{}`.
+  environment names to override configuration sections, e.g. `{ production: ['local'] }`.
+  As of version 1.7.0, all environments postload `local` unless they explicitly specify
+  their own postload layers.
 * `loader` - function to read and parse the config file (default `require()`) or a
   hash mapping extensions to loader functions
 * `extensions` - config filename extensions to try to load with the `loader` function,
@@ -255,6 +277,7 @@ ChangeLog
 * fix caller-provided layer merging
 * clean up and simplify _loadConfigFile()
 * clean up and simplify getCallingFile()
+* built-in targets all implicitly load the `default` and `local` layers
 
 1.6.3
 * fix loading from a nested subdirectory listed without surrounding parentheses

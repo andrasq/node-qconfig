@@ -1,7 +1,7 @@
 /**
  * quick little configuration loader
  *
- * Copyright (C) 2015 Andras Radics
+ * Copyright (C) 2015-2018 Andras Radics
  * Licensed under the Apache License, Version 2.0
  *
  * 2015-10-01 - AR.
@@ -102,14 +102,14 @@ module.exports = {
 
             'should apply qconfig.conf found in config dir': function(t) {
                 var qconf = new qconfig.QConfig({ dirName: 'config3' })
-                var config = qconf.load('preconfigured', null, true)
+                var config = qconf.load('preconfigured')
                 t.equal(config.canary, 'config3')
                 t.done();
             },
 
             'caller-specified layers should override qconfig.conf': function(t) {
                 var qconf = new qconfig.QConfig({ dirName: 'config3', layers: {preconfigured: ['other3']} })
-                var config = qconf.load('preconfigured', null, true)
+                var config = qconf.load('preconfigured')
                 t.equal(config.name, 'other3')
                 t.done();
             },
@@ -192,6 +192,8 @@ module.exports = {
             'should return config for named environment': function(t) {
                 var config = this.qconf.load('development')
                 t.equal(config.development, true)
+                t.equal(config.default, true)
+                t.equal(config.local, true)
                 t.done()
             },
 
@@ -203,27 +205,46 @@ module.exports = {
 
             'should use defined layers': function(t) {
                 var qconf = new qconfig.QConfig({ layers: {target: ['canary']} })
-                var config = qconf.load("target", null, true)
+                var config = qconf.load("target")
                 t.equal(config.canary, true)
                 t.done()
             },
 
-            'should load default by default': function(t) {
-                var config = this.qconf.load("target", null, true)
+            'should load default and local by default': function(t) {
+                var config = this.qconf.load('empty')
                 t.strictEqual(config.default, true)
+                t.strictEqual(config.local, true)
                 t.done()
             },
 
-            'should not load default by default if explicit layering is given': function(t) {
-                var qconf = new qconfig.QConfig({ layers: { target: [] } })
-                var config = qconf.load("target", null, true)
+            'should load default and local for built-in targets': function(t) {
+                var targets = [ 'development', 'staging', 'production', 'canary', 'custom' ]
+                for (var i=0; i<targets.length; i++) {
+                    var target = targets[i]
+                    var config = this.qconf.load(target)
+                    t.equal(config.default, true, target)
+                    t.equal(config.local, true, target)
+                }
+                t.done()
+            },
+
+            'should not auto-load default if explicit layering is given': function(t) {
+                var qconf = new qconfig.QConfig({ preload: { production: ['other'], other: [] } })
+                var config = qconf.load('production', null, true)
                 t.strictEqual(config.default, undefined)
+                t.done();
+            },
+
+            'should not auto-load local if explicit layering is given': function(t) {
+                var qconf = new qconfig.QConfig({ postload: { production: ['other'], other: [] } })
+                var config = qconf.load('production')
+                t.strictEqual(config.local, undefined)
                 t.done();
             },
 
             'should use defined layer regex string': function(t) {
                 var qconf = new qconfig.QConfig({ layers: {'/-override$/': ['canary', 'development']} })
-                var config = qconf.load("canary-override", null, true)
+                var config = qconf.load("canary-override")
                 t.equal(config.canary, true)
                 t.equal(config.production, true)
                 t.equal(config.development, true)

@@ -3,7 +3,7 @@
  * Loads the configuration named by the NODE_ENV environment variable,
  * with support for inherited and override settings from other configurations.
  *
- * Copyright (C) 2015 Andras Radics
+ * Copyright (C) 2015-2018 Andras Radics
  * Licensed under the Apache License, Version 2.0
  *
  * 2015-10-01 - AR.
@@ -36,17 +36,12 @@ function QConfig( opts ) {
     this.opts = this.merge(this.opts, opts)
 
     this.preload = this._installLayers([], {
-        default: [],    // clear dependency list for 'default' and 'local'
-        local: [],
-        development: ['default'],
-        staging: ['default'],
-        production: ['default'],
-        canary: ['production'],
-        custom: ['production'],
+        // development, staging, production implicitly layer on 'default' and 'local'
+        // canary and custom explicitly depend on production
+        canary: ['default', 'production'],
+        custom: ['default', 'production'],
     })
     this.postload = this._installLayers([], {
-        default: [],    // clear dependency list for 'default' and 'local'
-        local: [],
     })
     this.preload = this._installLayers(this.preload, this.opts.layers)
     this.preload = this._installLayers(this.preload, this.opts.preload)
@@ -70,16 +65,18 @@ QConfig.prototype = {
         var config = {}
 
         // install the preload layers
-        var layers = this._findLayers(this.preload, env) || ['default']
+        // Every layer, including preload, inherits from 'default' unless specified explicitly
+        var layers = this._findLayers(this.preload, env) || _nested && [] || ['default']
         for (var i=0; i<layers.length; i++) {
             this.merge(config, this.load(layers[i], configDirectory, true))
         }
 
-        // install the env
+        // install the env config
         this.merge(config, this._loadConfigFile(env, configDirectory, _nested))
 
-        // install the postload layers
-        layers = this._findLayers(this.postload, env) || ['local']
+        // use the postload layers for local overrides to the env
+        // Every layer, including postload, inherits from 'local' unless specified explicitly
+        layers = this._findLayers(this.postload, env) || _nested && [] || ['local']
         for (var i=0; i<layers.length; i++) {
             this.merge(config, this.load(layers[i], configDirectory, true))
         }
@@ -114,14 +111,8 @@ QConfig.prototype = {
     _findLayers: function _findLayers( layers, env ) {
         // linear search newest to oldest, newest matching entry wins
         for (var i=layers.length-1; i>=0; i--) {
-            // TODO:
-            // if (layers[i][0] == env || layers[i][0].test && layers[i][0].test(env)) return layers[i][1]
-            if (typeof layers[i][0] === 'string') {
-                if (layers[i][0] === env) return layers[i][1]
-            }
-            else {
-                if (layers[i][0].test(env)) return layers[i][1]
-            }
+            if (layers[i][0] === env) return layers[i][1]
+            if (layers[i][0].test && layers[i][0].test(env)) return layers[i][1]
         }
         return null
     },
@@ -141,6 +132,7 @@ QConfig.prototype = {
                 if (!_silenced && err.message.indexOf('Cannot find') == -1 && err.message.indexOf('ENOENT') == -1) throw err
             }
             // warn if the requested environment is not configured
+            // TODO: should it be fatal if a top-level environment is not configured?
             QConfig.maybeWarn(!_silenced, "qconfig: env '%s' not configured (NODE_ENV=%s)", env, process.env.NODE_ENV)
             return {}
         }
@@ -191,7 +183,7 @@ QConfig.maybeWarn = function maybeWarn( verbose, format ) {
     if (verbose) {
         var argv = new Array()
         for (var i=1; i<arguments.length; i++) argv.push(arguments[i])
-        console.log.apply(null, arguments)
+        console.log.apply(null, argv)
     }
 }
 
