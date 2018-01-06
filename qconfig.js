@@ -35,11 +35,13 @@ function QConfig( opts ) {
     // user options override qconfig.conf
     this.opts = this.merge(this.opts, opts)
 
+    this.defaultPreload = this.opts.defaultPreload || ['default']
+    this.defaultPostload = this.opts.defaultPostload || ['local']
     this.preload = this._installLayers([], {
         // development, staging, production implicitly layer on 'default' and 'local'
         // canary and custom explicitly depend on production
-        canary: ['default', 'production'],
-        custom: ['default', 'production'],
+        canary: this.defaultPreload.concat('production'),
+        custom: this.defaultPreload.concat('production'),
     })
     this.postload = this._installLayers([], {
     })
@@ -66,7 +68,7 @@ QConfig.prototype = {
 
         // install the preload layers
         // Every layer, including preload, inherits from 'default' unless specified explicitly
-        var layers = this._findLayers(this.preload, env) || _nested && [] || ['default']
+        var layers = this._findLayers(this.preload, env) || _nested && [] || this.defaultPreload
         for (var i=0; i<layers.length; i++) {
             this.merge(config, this.load(layers[i], configDirectory, true))
         }
@@ -76,7 +78,7 @@ QConfig.prototype = {
 
         // use the postload layers for local overrides to the env
         // Every layer, including postload, inherits from 'local' unless specified explicitly
-        layers = this._findLayers(this.postload, env) || _nested && [] || ['local']
+        layers = this._findLayers(this.postload, env) || _nested && [] || this.defaultPostload
         for (var i=0; i<layers.length; i++) {
             this.merge(config, this.load(layers[i], configDirectory, true))
         }

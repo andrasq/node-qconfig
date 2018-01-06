@@ -75,6 +75,8 @@ is loadable by `require()`, typically `.js`, `.json` and `.coffee`.
 - `loader` - function to use to convert the config files to objects (default `require`)
 - `extensions` - config filename extensions to look for, see Configuration File
   Formats below (default `['', '.js', '.json']`)
+- `defaultPreload` - list of configs to preload for all environments.  Default `['default']`.
+- `defaultPostload` - list of configs to postload for all environments.  Default `['local']`.
 
 #### qconfig.conf
 
@@ -246,6 +248,10 @@ Options:
 * `extensions` - config filename extensions to try to load with the `loader` function,
   in order `['', '.js', '.json', '.coffee']`.  The object returned by the first successful load
   (no error thrown) is the one used.
+- `defaultPreload` - list of configs to preload for all environments.  Default `['default']`.
+  Configure to the empty list `[]` to disable preloading `default`.
+- `defaultPostload` - list of configs to postload for all environments.  Default `['local']`.
+  Configure to the empty list `[]` to disable postloading `local`.
 
         var QConfig = require('qconfig/qconfig')
         var qconf = new QConfig()
@@ -268,7 +274,8 @@ ChangeLog
 ---------
 
 1.7.0
-* if no hierarchy specified, preload `default` and postload `local`
+* targets with no `preload` or `postload` hierarchies implicitly load the
+  `defaultPreload` and `defaultPostload` layers, by default `default` and `local`
 * fix pre-, postload layer merging
 * test with qnit 0.19.0
 * fix env-not-configured warning
@@ -277,7 +284,8 @@ ChangeLog
 * fix caller-provided layer merging
 * clean up and simplify _loadConfigFile()
 * clean up and simplify getCallingFile()
-* built-in targets all implicitly load the `default` and `local` layers
+* put under ci test
+* write tests 100% test coverage
 
 1.6.3
 * fix loading from a nested subdirectory listed without surrounding parentheses

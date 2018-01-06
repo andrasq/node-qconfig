@@ -82,6 +82,28 @@ module.exports = {
                 t.done()
             },
 
+            'should handle custom preload': function(t) {
+                var qconf = new QConfig({ defaultPreload: ['development'] })
+                var conf = qconf.load('production')
+                t.equal(conf.name, 'production')
+                t.equal(conf.development, true)
+                t.equal(conf.production, true)
+                t.equal(conf.default, undefined)
+                t.equal(conf.local, true)
+                t.done()
+            },
+
+            'should handle custom postload': function(t) {
+                var qconf = new QConfig({ defaultPostload: ['development'] })
+                var conf = qconf.load('production')
+                t.equal(conf.name, 'development')
+                t.equal(conf.development, true)
+                t.equal(conf.production, true)
+                t.equal(conf.default, true)
+                t.equal(conf.local, undefined)
+                t.done()
+            },
+
             'should accept loader function': function(t) {
                 var called = false
                 function loadConfig(filename) { called = true; return require(filename) }
