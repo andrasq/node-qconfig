@@ -32,19 +32,21 @@ function QConfig( opts ) {
     var qconf = this._loadConfigFile('qconfig.conf', this.opts.configDirectory, true)
     this.opts = this.merge(this.opts, qconf)
 
-    // user options override qconfig.conf
+    // caller options override qconfig.conf
     this.opts = this.merge(this.opts, opts)
 
+    // all environments (development, staging, production, canary) implicitly layer on 'default' and 'local'
+    // in addition, canary and custom also depend on production
     this.defaultPreload = this.opts.defaultPreload || ['default']
     this.defaultPostload = this.opts.defaultPostload || ['local']
     this.preload = this._installLayers([], {
-        // development, staging, production implicitly layer on 'default' and 'local'
-        // canary and custom explicitly depend on production
         canary: this.defaultPreload.concat('production'),
         custom: this.defaultPreload.concat('production'),
     })
     this.postload = this._installLayers([], {
     })
+
+    // however, explicit layering from qconfig.conf or opts overrides the builtins
     this.preload = this._installLayers(this.preload, this.opts.layers)
     this.preload = this._installLayers(this.preload, this.opts.preload)
     this.postload = this._installLayers(this.postload, this.opts.postload)

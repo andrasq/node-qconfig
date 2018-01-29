@@ -97,25 +97,23 @@ config sections as overrides.  These are configured in the `preload` and `postlo
 sections of `qconfig.conf`, or via the `preload` and `postload` properties of the
 constructor options.
 
-As of version 1.7.0, all environments implicitly preload `default` and postload `local`.
+As of version 1.7.0, environments without a specified inheritance hierarchy preload
+`default` and postload `local` for more convenient `config` compatibility.
 This behavior does not apply to environments that explicitly specify their own preload
-or postload dependencies.  To turn off auto-loading `default`, define an empty preload
+or postload dependencies:  if a hierarchy is specified explicitly, those and only
+those layers will be loaded.  To turn off auto-loading `default`, define an empty preload
 list.  To turn off auto-loading `local`, define an empty postload list.
 
     // configure environment `bare` to not load `default` or `local`
     var load = require('qconfig/load')
     var config = load('bare', { preload: { bare: [] }, postload: { bare: [] } })
 
-As of version 1.7.0, environments without a specified inheritance hierarchy preload
-`default` and postload `local` for more convenient `config` compatibility.  If a
-hierarchy is specified explicitly, those and only those layers will be loaded,
-without built-in defaults.
-
-If a top-level environment is not configured, it elicits a warning message.
+If the top-level environment being loaded is not configured, it elicits a warning message.
 If a dependency is not configured, it is silently ignored.
 
-The base set of environments are `development`, `staging`, `production` and `canary`.
-Each preloads `default` and postloads `lovcal`.  `canary` also preloads `production`.
+The built-in default set of environments are `development`, `staging`, `production` and `canary`.
+Each preloads `default` and postloads `local`.  `canary` also preloads `production`.
+This behavior can be overridden with qconfig.conf or `load` options.
 
 ### Configation File Formats
 
