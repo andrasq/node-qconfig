@@ -61,6 +61,8 @@ QConfig.prototype = {
     load: function load( env, configDirectory, _nested ) {
         var env = env || this.opts.env
         var configDirectory = configDirectory || this.opts.configDirectory
+        // TODO: if (typeof env === 'object') extract options.env
+        // TODO: if (typeof configDirectory === 'object') extract options.dir etc
         if (!configDirectory || !this._isDirectory(configDirectory)) return {notConfigured: true}      // no config directory
 
         this._depth += 1
