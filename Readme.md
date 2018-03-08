@@ -271,6 +271,9 @@ not configured, returns an empty config `{ }`.
 ChangeLog
 ---------
 
+1.7.1
+* fix usage under nyc profiling by skipping /nyc/node_modules/ sources
+
 1.7.0
 * targets with no `preload` or `postload` hierarchies implicitly load the
   `defaultPreload` and `defaultPostload` layers, by default `default` and `local`
