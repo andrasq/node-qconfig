@@ -197,6 +197,7 @@ var qconfigFilename = new RegExp("/qconfig/")
 var qconfigTestfile = new RegExp("/qconfig/test/")
 var moduleJsFilename = new RegExp("module.js:")
 var coffeeScriptFilename = new RegExp("/coffee-script/|/coffeescript/")
+var profilerScriptFilename = new RegExp("/nyc/node_modules/")
 // source filenames are absolute, anchored at '/'; built-in sources at a plain filename
 var builtinFilename = new RegExp(" [(][^/]*:[0-9]+:[0-9]+[)]$")  // (module.js:1:2)
 var sourceFilename = new RegExp(" [(]?(/.*):[0-9]+:[0-9]+[)]?$") // (/path/file.js:1:2) || /path/file.js:1:2
@@ -219,6 +220,7 @@ QConfig.getCallingFile = function getCallingFile( stack, filename ) {
             qconfigFilename.test(stack[0]) && !qconfigTestfile.test(stack[0]) && stack.length > 1 ||
             moduleJsFilename.test(stack[0]) ||
             coffeeScriptFilename.test(stack[0]) ||
+            profilerScriptFilename.test(stack[0]) ||
             myFilename.test(stack[0]) ||
             builtinFilename.test(stack[0])
         ))
